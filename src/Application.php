@@ -138,6 +138,7 @@ class Application extends BaseApplication implements
     {
         $urlConnexion = Router::url([
             'prefix' => false,
+            'plugin' => false,
             'controller' => 'Utilisateurs',
             'action' => 'connexion',
         ]);
