@@ -10,10 +10,17 @@
     # Laisse passer les vérifications ACME (renouvellement des certificats).
     RewriteRule ^(\.well-known/.*)$ $1 [L]
 
-    # Force HTTPS, sauf en local et sur un éventuel domaine de préproduction.
-    # %{HTTPS} plutôt que %{ENV:HTTPS} : derrière le proxy de certains mutualisés,
-    # la variable d'environnement n'est pas toujours renseignée.
+    # Force HTTPS.
+    #
+    # Sur la plupart des mutualisés, TLS est terminé par un répartiteur en amont :
+    # Apache reçoit alors du HTTP en clair et %{HTTPS} vaut "off" même quand le
+    # visiteur est bien en HTTPS. Rediriger sur ce seul critère créerait une
+    # boucle infinie. Les trois conditions suivantes doivent donc TOUTES indiquer
+    # « pas de HTTPS » avant de rediriger.
     RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP:X-Forwarded-SSL} !=on
+    RewriteCond %{SERVER_PORT} !=443
     RewriteCond %{HTTP_HOST} !^localhost [NC]
     RewriteCond %{HTTP_HOST} !^local\. [NC]
     RewriteCond %{HTTP_HOST} !^staging\. [NC]

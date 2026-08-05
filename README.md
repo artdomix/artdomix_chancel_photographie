@@ -155,6 +155,40 @@ $users->saveOrFail($u);
       manque, le site retombe seul sur WebP et JPEG, rien à modifier
 - [ ] `/sitemap.xml` et `/robots.txt` répondent sur le domaine de production
 
+## Dépannage
+
+### « Missing or invalid CSRF cookie »
+
+Le jeton CSRF est **signé avec `Security.salt`**. Changer le salt invalide donc
+d'un coup tous les cookies déjà posés dans les navigateurs — et comme
+`config/app_local.php` n'est pas versionné, chaque installation génère le sien.
+
+C'est la cause la plus fréquente de cette erreur. Trois déclencheurs typiques :
+
+- première installation après un clone, avec un onglet déjà ouvert ;
+- `Security.salt` régénéré ou `app_local.php` recopié ;
+- onglet resté ouvert très longtemps.
+
+**Solution : vider les cookies du site**, ou ouvrir une fenêtre de navigation
+privée. Depuis la correction, le site n'affiche plus une page 403 dans ce cas
+mais renvoie au formulaire avec un message explicite.
+
+Si l'erreur persiste avec des cookies neufs, vérifier que `Security.salt` est
+bien identique entre les processus PHP servant le site (un seul
+`config/app_local.php`, pas de variable d'environnement `SECURITY_SALT`
+concurrente).
+
+### Boucle de redirection sur un hébergement mutualisé
+
+Sur la plupart des mutualisés, TLS est terminé par un répartiteur en amont :
+Apache reçoit du HTTP en clair et `%{HTTPS}` vaut `off` même quand le visiteur
+est bien en HTTPS. Le `.htaccess` tient compte de `X-Forwarded-Proto`,
+`X-Forwarded-SSL` et du port 443 avant de rediriger, précisément pour éviter
+cette boucle. Si l'hébergeur utilise un autre en-tête, l'ajouter aux conditions.
+
+Penser aussi à renseigner `App.fullBaseUrl` en `https://…` : c'est lui qui
+détermine les URL absolues (plan de site, e-mails, liens de partage).
+
 ## Points non vérifiables hors production
 
 Quatre éléments n'ont pas pu être testés pendant le développement et sont à
