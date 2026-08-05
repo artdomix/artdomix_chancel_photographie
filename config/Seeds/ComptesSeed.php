@@ -44,7 +44,7 @@ class ComptesSeed extends BaseSeed
                 'societe' => null,
             ],
             [
-                'email' => 'Celine.benner@gmail.com',
+                'email' => 'celine.benner@gmail.com',
                 'role' => 'member',
                 'prenom' => 'Céline',
                 'nom' => 'Benner',

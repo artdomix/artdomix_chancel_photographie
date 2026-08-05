@@ -24,6 +24,7 @@
 use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\RouteBuilder;
 
+use Cake\Http\Middleware\CsrfProtectionMiddleware;
 /*
  * This file is loaded in the context of the `Application` class.
  * So you can use `$this` to reference the application class instance
@@ -67,7 +68,10 @@ return function (RouteBuilder $routes): void {
 
     $routes->scope('/', function (RouteBuilder $builder): void {
         $builder->connect('/', ['controller' => 'Pages', 'action' => 'accueil']);
-
+$builder->registerMiddleware('csrf', new CsrfProtectionMiddleware([
+            'httponly' => true,
+            'field' => '_csrfToken',
+        ]));
         /*
          * Comptes. `/admin` mène au tableau de bord, et le middleware redirige
          * ici tant que le visiteur n'est pas connecté : l'URL que le photographe

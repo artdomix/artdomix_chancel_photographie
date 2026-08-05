@@ -12,6 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title><?= h($this->fetch('title') ?: 'Connexion') ?> — Chancel Photographie</title>
+    <?= $this->Html->meta('csrfToken', $this->request->getAttribute('csrfToken')) ?>
     <?= $this->Vite->asset('resources/js/app.js') ?>
 </head>
 <body class="flex min-h-screen items-center justify-center px-6">
