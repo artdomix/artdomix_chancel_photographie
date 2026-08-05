@@ -1,0 +1,93 @@
+{
+  "_htmx-BAY84KEQ.css": {
+    "file": "assets/htmx-BAY84KEQ.css",
+    "src": "_htmx-BAY84KEQ.css"
+  },
+  "_htmx.esm-D6_NKux7.js": {
+    "file": "assets/htmx.esm-D6_NKux7.js",
+    "name": "htmx.esm",
+    "css": [
+      "assets/htmx-BAY84KEQ.css"
+    ],
+    "assets": [
+      "assets/oswald-latin-300-normal-Cl0rPaJv.woff2",
+      "assets/oswald-latin-300-normal-DLdBc7-y.woff",
+      "assets/oswald-latin-400-normal-BAFo8sP8.woff2",
+      "assets/oswald-latin-400-normal-D1wpMXgf.woff",
+      "assets/oswald-latin-500-normal-B-eyT0Dw.woff2",
+      "assets/oswald-latin-500-normal-DM85Di4w.woff",
+      "assets/open-sans-latin-300-normal-D5gIFPXQ.woff2",
+      "assets/open-sans-latin-300-normal-BKswzCSr.woff",
+      "assets/open-sans-latin-400-normal-Bk63H6sG.woff2",
+      "assets/open-sans-latin-400-normal-DKniycaP.woff",
+      "assets/open-sans-latin-600-normal-Cp4N6AwT.woff2",
+      "assets/open-sans-latin-600-normal-C3dWW5mx.woff"
+    ]
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-300-normal.woff": {
+    "file": "assets/open-sans-latin-300-normal-BKswzCSr.woff",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-300-normal.woff"
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-300-normal.woff2": {
+    "file": "assets/open-sans-latin-300-normal-D5gIFPXQ.woff2",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-300-normal.woff2"
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff": {
+    "file": "assets/open-sans-latin-400-normal-DKniycaP.woff",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff"
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2": {
+    "file": "assets/open-sans-latin-400-normal-Bk63H6sG.woff2",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2"
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-600-normal.woff": {
+    "file": "assets/open-sans-latin-600-normal-C3dWW5mx.woff",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-600-normal.woff"
+  },
+  "node_modules/@fontsource/open-sans/files/open-sans-latin-600-normal.woff2": {
+    "file": "assets/open-sans-latin-600-normal-Cp4N6AwT.woff2",
+    "src": "node_modules/@fontsource/open-sans/files/open-sans-latin-600-normal.woff2"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-300-normal.woff": {
+    "file": "assets/oswald-latin-300-normal-DLdBc7-y.woff",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-300-normal.woff"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-300-normal.woff2": {
+    "file": "assets/oswald-latin-300-normal-Cl0rPaJv.woff2",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-300-normal.woff2"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-400-normal.woff": {
+    "file": "assets/oswald-latin-400-normal-D1wpMXgf.woff",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-400-normal.woff"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-400-normal.woff2": {
+    "file": "assets/oswald-latin-400-normal-BAFo8sP8.woff2",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-400-normal.woff2"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff": {
+    "file": "assets/oswald-latin-500-normal-DM85Di4w.woff",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff"
+  },
+  "node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff2": {
+    "file": "assets/oswald-latin-500-normal-B-eyT0Dw.woff2",
+    "src": "node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff2"
+  },
+  "resources/js/admin.js": {
+    "file": "assets/admin-Cw0X47ZP.js",
+    "name": "admin",
+    "src": "resources/js/admin.js",
+    "isEntry": true,
+    "imports": [
+      "_htmx.esm-D6_NKux7.js"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-C4n8VAql.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_htmx.esm-D6_NKux7.js"
+    ]
+  }
+}

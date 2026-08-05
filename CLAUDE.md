@@ -5,209 +5,162 @@ Guide pour Claude Code (et tout autre agent) travaillant sur ce dépôt.
 ## Le projet
 
 Site vitrine/portfolio du photographe **Chancel** (https://chancel.art-domix.fr) :
-galeries photo, portfolio par catégories, blog, vidéos, livres, tirages,
-expositions, formulaire de contact, plus un back-office complet d'administration.
+galeries photo, portfolio, blog, vidéos, livres, tirages, expositions, moodboards
+partageables, formulaire de contact, back-office d'administration et espace membre.
 
-Le code source de référence est historiquement sur GitLab
-(`gitlab.com/artdomix/artdomix_chancel_photographie`, branche `master`).
-Dernier commit fonctionnel : mars 2021 (« upgrade to cakephp 3.9.4 »).
+**Réécriture complète.** L'ancien site (CakePHP 3.9, figé en mars 2021, hébergé sur
+`gitlab.com/artdomix/artdomix_chancel_photographie`) n'est pas migré : on repart d'un
+projet neuf. Le domaine métier et le vocabulaire français sont conservés, l'architecture
+technique non. Se référer à l'ancien dépôt uniquement pour comprendre une intention
+métier, jamais comme modèle de code.
 
 ## Stack
 
 | Élément | Version / choix |
 |---|---|
-| Framework | CakePHP **3.9** (verrouillé en 3.9.8 dans `composer.lock`) |
-| PHP | `composer.json` déclare `>=5.5.9` — **obsolète** : `src/Application.php` utilise les types de retour `: void`, donc PHP **7.1 minimum** est réellement requis |
-| Base de données | MySQL, toutes les tables préfixées `art_` |
-| Templates | `.ctp` (convention CakePHP 3, `src/Template/`) |
-| Front | Bootstrap 2/3 + jQuery 2.1.3, thème HTML acheté (`webroot/*/template/`), flexslider, kwicks, superfish, touchTouch |
-| Éditeur riche | plugin local `plugins/TinyMCE` (versionné dans le dépôt) |
-| Serveur | Apache + `mod_rewrite` (double `.htaccess` : racine → `webroot/`, force HTTPS et non-www) |
+| Framework | CakePHP **5.4** (PHP **8.2+** requis) |
+| Base de données | **MySQL / MariaDB**, InnoDB, `utf8mb4` / `utf8mb4_unicode_ci` |
+| Templates | `.php` dans `templates/` |
+| CSS | **Tailwind 4** — configuration CSS-first (`@theme`), il n'y a pas de `tailwind.config.js` |
+| Interactivité | **HTMX 2** (fragments serveur, pas de SPA) |
+| Animation | **GSAP 3.15** — ScrollTrigger, Flip, SplitText, ScrollSmoother (tous gratuits depuis avril 2025) |
+| Build | **Vite 7** — sortie dans `webroot/build/` |
+| Carte | Leaflet + OpenStreetMap (pas de clé API) |
+| Serveur | Apache mutualisé + `mod_rewrite` |
 
-Dépendances Composer notables : `dereuromark/cakephp-tools` (behavior `Slugged`),
-`markstory/asset_compress`, `mobiledetect/mobiledetectlib` (détecteurs `mobile`/`tablet`
-enregistrés dans `config/bootstrap.php`), `cakephp/migrations`, `muffin/slug` et
-`admad/cakephp-glide` (**déclarés mais jamais utilisés dans le code** — candidats à la suppression).
+Plugins Composer : `cakephp/authentication`, `cakephp/authorization`,
+`dereuromark/cakephp-captcha` (formulaire de contact), `cakephp/migrations`,
+`intervention/image` (dérivés).
 
 ## Mise en route
 
 ```bash
-composer install                 # vendor/ n'est pas versionné
-cp config/app.default.php config/app.php   # app.php est gitignoré (secrets)
-# éditer config/app.php : Datasources.default, Security.salt, EmailTransport
+composer install
+npm install
+cp config/app_local.example.php config/app_local.php   # puis renseigner la BDD + le salt
+
+mysql -e "CREATE DATABASE chancel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -e "CREATE DATABASE chancel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+npm run build          # OBLIGATOIRE : sans lui, aucune page n'a de style
+bin/cake migrations migrate
+bin/cake migrations seed
+bin/cake server        # http://localhost:8765
 ```
 
-Il n'y a **pas de migrations exploitables** : le schéma vit dans
-`config/schema/artdomix_db*.sql.zip` (archives **corrompues/tronquées**, elles ne
-se dézippent pas proprement — il faut récupérer un dump depuis la prod).
-`config/schema/i18n.sql` et `sessions.sql` sont des tables utilitaires CakePHP.
+Vérifications : `vendor/bin/phpunit`, `vendor/bin/phpcs`, `php -l` sur les fichiers
+touchés.
 
-Commandes utiles :
+## Contraintes structurantes
 
-```bash
-bin/cake server                  # serveur de dev
-bin/cake bake                    # génération de code (bake est en require-dev)
-bin/cake migrations migrate      # plugin chargé en CLI uniquement
-composer update                  # cf. README, workflow historique WAMP
-```
+Trois contraintes expliquent la plupart des choix de ce dépôt. Les enfreindre casse
+la production.
 
-Aucune suite de tests n'existe : `phpunit.xml.dist` pointe vers `./tests/` qui est
-absent du dépôt, et `.travis.yml` cible PHP 5.5–7.1 sur Travis CI (service arrêté).
-**Ne pas prétendre qu'une modification est « testée »** — il n'y a rien à exécuter.
-Le seul filet de sécurité disponible est `php -l` (lint) sur les fichiers touchés.
+### 1. L'hébergement est mutualisé et n'a pas Node
+
+`webroot/build/` est **volontairement committé** — c'est l'exception au réflexe « ne pas
+versionner les artefacts de build ». `npm run build` tourne en local ou en CI, jamais
+sur le serveur. **Toute modification dans `resources/` doit être suivie d'un
+`npm run build` et le résultat committé**, sinon la prod sert d'anciens assets.
+
+### 2. La base est MySQL, y compris pour les tests
+
+Pas de SQLite, même en test : le schéma utilise des `ENUM` et des index `FULLTEXT`.
+La connexion `test` de `app_local.example.php` pointe donc sur MySQL — le squelette
+CakePHP la fait pointer sur SQLite par défaut, ne pas rétablir ce défaut.
+
+On développe sur MariaDB mais la prod est probablement MySQL 8 : s'en tenir au
+dénominateur commun. `utf8mb4_unicode_ci` et **jamais** `utf8mb4_0900_ai_ci`
+(MySQL 8 uniquement). Pas de colonnes JSON, pas de fonction propre à une version.
+
+### 3. Le dépôt ne contient aucune image
+
+L'ancien dépôt pesait 1,3 Go parce que 550 Mo de JPEG y étaient commités. Ici :
+originaux dans `storage/originaux/` (hors `webroot/`, gitignoré), dérivés dans
+`webroot/media/photos/` (gitignoré). **Ne jamais committer d'image ni d'archive.**
 
 ## Architecture
 
-### Deux zones, un préfixe
+```
+config/            routes.php, migrations/, seeds/, app_local.php (gitignoré)
+resources/css|js/  sources Tailwind + JS — c'est ici qu'on édite le front
+src/
+  Controller/            front public
+  Controller/Admin/      préfixe admin
+  Controller/Membre/     préfixe membre
+  Service/               traitement d'images, EXIF, tokens de partage
+  View/Helper/           ViteHelper, PhotoHelper, SeoHelper
+templates/         vues .php
+webroot/build/     sortie Vite — COMMITTÉE (cf. contrainte 1)
+webroot/media/     dérivés générés — gitignoré
+storage/           originaux — gitignoré
+```
 
-- **Front public** : `src/Controller/*.php`, templates `src/Template/<Controller>/`.
-- **Back-office** : préfixe de route `admin` → `src/Controller/Admin/*.php`,
-  templates `src/Template/Admin/<Controller>/`, layout `Admin/Layout/default.ctp`.
+### Sécurité : refus par défaut
 
-L'authentification est gérée dans `src/Controller/AppController.php` :
-`beforeFilter()` fait `$this->Auth->allow()` (tout ouvert) puis `deny()` **si et
-seulement si** `prefix == 'admin'`. Le composant `Auth` restreint le login au scope
-`Users.role_id = 1`. Toute nouvelle zone protégée doit passer par le préfixe `admin`,
-sinon elle sera publique.
+L'ancien site ouvrait tout (`$this->Auth->allow()`) puis refermait sur le préfixe
+`admin` — un oubli suffisait à exposer une page. Ici, `AuthenticationMiddleware` et
+`AuthorizationMiddleware` **refusent par défaut** ; chaque action publique est
+autorisée explicitement dans son contrôleur. Une action nouvelle est inaccessible
+tant qu'on ne l'a pas ouverte — c'est voulu, ne pas « corriger » ce comportement en
+rouvrant globalement.
 
-### Routes principales (`config/routes.php`)
-
-| URL | Cible |
-|---|---|
-| `/` | `Pages::index` (page d'accueil, agrège photos/albums/articles/catégories) |
-| `/portfolio/*` | `Typecategories::index` |
-| `/portfolio/view/<slug>` | `Typecategories::view` |
-| `/contact` | `Messages::contact` |
-| `/admin` | `Users::login` |
-| `/admin/*` | fallback `DashedRoute` sur `src/Controller/Admin/` |
-
-Le reste passe par `$routes->fallbacks(DashedRoute::class)`.
+Les accès par lien (`/m/{token}` moodboards, `/g/{token}` galeries client) reposent sur
+un token opaque et un mot de passe hashé, sans compte utilisateur.
 
 ### Modèle de données
 
-22 tables, toutes préfixées `art_` via `$this->setTable('art_'.$this->getTable())`
-dans chaque `initialize()`. Entités principales :
+- `photos` ↔ `albums` en **N-N** (`albums_photos`, avec `ordre`), et `photos` ↔ `tags`
+  en **N-N** (`photos_tags`). Une photo appartient à plusieurs albums : c'est le
+  changement majeur par rapport à l'ancien schéma.
+- `albums` forme un **arbre** via le `TreeBehavior` du cœur CakePHP : `parent_id` +
+  `lft`/`rght`. Il n'y a **pas** de colonne `child_id` — les enfants sont déduits du
+  jeu de nœuds imbriqués. Toujours passer par les méthodes du behavior
+  (`moveUp`, `moveDown`, `find('threaded')`), jamais écrire `lft`/`rght` à la main.
+- `categories` et `typecategories` de l'ancien site **n'existent plus**, remplacés par
+  l'arbre d'albums et les tags.
+- `exifs` (1-1 avec `photos`) porte les GPS utilisés par la carte.
+- Clés étrangères réelles avec `ON DELETE` explicite — l'ancien schéma n'en avait aucune.
 
-- `Photos` — le cœur. `belongsTo` Categories + Albums, `hasOne` Exifs,
-  `hasMany` Articles/Modeles/Shootings/Tirages.
-- `Typecategories` → `Categories` → `Albums` → `Photos` : la hiérarchie du portfolio.
-  Les catégories sont filtrées par `actif != 0` et `album_id IS NOT NULL`.
-- Contenu éditorial : `Articles` (blog) + `Commentaires`, `Pages`, `Livres`,
-  `Expositions`, `Tirages`/`Typetirages`, `Videos`/`Typevideos`, `Modeles`, `Shootings`.
-- Divers : `Users`/`Roles`, `Messages`/`Demandes` (contact), `Mails`, `Config`, `Exifs`.
+### Pipeline images
 
-Les URLs lisibles viennent du behavior `Tools.Slugged` (Articles, Livres, Shootings,
-Typecategories, Videos), consommé via `findBySlug($slug)`.
+`src/Service/Image/` génère à l'upload quatre variantes (`thumb` 320, `grid` 640,
+`content` 1200, `large` 2048) en AVIF, WebP et JPEG, plus un `lqip` inline. Règles :
 
-### ⚠️ `defaultConnectionName()` dupliqué dans les 22 tables
+- **L'original n'est jamais servi** — il reste hors `webroot/`.
+- **AVIF conditionnel** : `function_exists('imageavif')` peut être faux sur le
+  mutualisé ; le flag `has_avif` par photo évite de référencer un fichier absent.
+- Génération **synchrone**, une photo par requête HTTP : pas de worker sur mutualisé.
+- `unlink()` toujours précédé de `file_exists()`.
+- Upload validé : type MIME réel, extension, taille et dimensions maximales.
 
-Chaque `src/Model/Table/*Table.php` contient :
+### GSAP et accessibilité
 
-```php
-public static function defaultConnectionName() {
-    if($_SERVER['SERVER_NAME'] != 'localhost'){ return 'default'; }
-    return 'localhost';
-}
-```
+Toutes les animations passent par `gsap.matchMedia()` avec une branche
+`prefers-reduced-motion: reduce` qui **remet les éléments à leur état final** — sans
+elle, ils resteraient à l'opacité 0 posée par le CSS. Ne jamais ajouter d'animation
+hors de ce garde-fou.
 
-Conséquences : deux datasources (`default` et `localhost`) doivent exister dans
-`config/app.php`, et **le code plante en CLI** (`$_SERVER['SERVER_NAME']` non défini).
-Si tu touches à ce point, modifie les 22 fichiers de façon cohérente — ou mieux,
-remonte la logique dans un `AppTable` commun / la config.
+Le CSS ne masque les éléments `[data-anim]` qu'une fois la classe `js-pret` posée par
+le JS : une page reste lisible si le bundle ne se charge pas.
 
-### Pipeline images — convention critique
+## Conventions du code
 
-`src/Controller/Component/ResizeImgComponent.php` génère, à l'upload, une déclinaison
-par dossier numéroté sous `webroot/img/photos/` :
+- **Domaine en français, framework en anglais.** Tables et colonnes en français
+  (`photos.titre`, `albums.nom`, `actif`, `date_capture`), entités métier françaises
+  (`Livres`, `Tirages`, `Modeles`, `Moodboards`, `Galeries`). Ne pas angliciser.
+- Commentaires, messages de validation et messages de commit **en français**.
+- Les commentaires expliquent *pourquoi*, pas *quoi*.
+- `declare(strict_types=1);` en tête de chaque fichier PHP.
+- Suivre `.editorconfig` et le standard CakePHP (`vendor/bin/phpcs`).
 
-| Dossier | Largeur max | Usage |
-|---|---|---|
-| `1/` | original uploadé | **gitignoré** (`.gitignore`) |
-| `2/` | 2048 px | grand format |
-| `3/` | 500 px | vignette moyenne |
-| `4/` | 120 px | miniature |
-| `5/` | 940 px | pleine largeur contenu |
-| `6/` | 270 px | grille |
+## Règles de travail
 
-Le nom de fichier stocké en base (`photos.url`) est `md5(nom_sans_extension).jpeg`,
-avec un suffixe incrémental en cas de collision. Le ratio est préservé
-(paysage/portrait détecté par comparaison largeur/hauteur).
-`Admin/PhotosController::delete()` supprime en boucle sur les dossiers `2..6`.
-
-**Environ 550 Mo de dérivés JPEG sont commités dans le dépôt** (3175 fichiers,
-dossiers `2` à `6`) — c'est la raison du poids de 1,3 Go au clone. Ne pas ajouter
-de nouvelles images binaires ; envisager Git LFS ou un stockage externe.
-
-Les EXIF sont lus avec `exif_read_data()` et écrits dans `art_exifs`
-(`date_capture` sert au tri chronologique des galeries).
-
-### Composants
-
-- `ImageToolComponent` (1400 lignes) — boîte à outils image, largement inutilisée.
-- `ResizeImgComponent` — voir ci-dessus, chargé à la demande dans `Admin/PhotosController::add()`.
-- `Galerie500pxComponent` — intégration 500px, **désactivée** (appel commenté dans `PagesController::index()`).
-
-### Helpers
-
-`src/View/Helper/` : `DateHelper` (formats FR), `VideoHelper` (embeds), `GravatarHelper`.
-
-## Conventions du code existant
-
-- **Domaine en français, framework en anglais** : classes/tables `Photos`, `Albums`,
-  mais aussi `Commentaires`, `Livres`, `Tirages`, `Modeles`, `Demandes`, `Typecategories`.
-  Colonnes en français (`nom`, `actif`, `date_capture`). Garder cette convention —
-  ne pas « angliciser » au passage.
-- Commentaires et messages de commit en français.
-- Indentation mixte (tabulations dans le code métier, espaces dans le squelette CakePHP).
-  `.editorconfig` existe : suivre le style du fichier édité plutôt qu'imposer un reformatage.
-- Les templates `voir.ctp` / `liste.ctp` / `recherche.ctp` sont les variantes françaises
-  ajoutées au-dessus des `view.ctp` / `index.ctp` générés par bake.
-
-## Dette technique connue (à traiter lors de la mise à jour)
-
-Rien de tout cela n'est un bug à corriger « en passant » sans demander — mais il faut
-en tenir compte avant toute montée de version.
-
-1. **`echo` / `print_r` / `var_dump` de debug en production** dans
-   `Admin/PhotosController::add()` (~11 occurrences dans `src/Controller`).
-   Ils s'affichent avant les redirections et polluent la sortie HTML.
-2. **Clé API bit.ly en dur** dans `AppController::short_url()` (login `dodo15` +
-   `apiKey`). À révoquer et sortir du code — la méthode n'est d'ailleurs appelée nulle part.
-3. **Upload sans validation** : `Admin/PhotosController::add()` fait confiance à
-   `$_FILES` (pas de contrôle de type MIME, d'extension ni de taille) et écrit
-   directement dans `webroot/`.
-4. **`isAuthorized()` compare `$user['role_id'] === '1'`** (identité stricte avec une
-   *string*) alors que la colonne est entière → renvoie toujours `false`.
-   Un commit précédent (« correction sql string vers int ») a traité un cas voisin.
-5. **API dépréciées bloquantes pour CakePHP 4** :
-   - 65 usages de `$this->request->data` → `getData()`
-   - 87 imports de `Cake\Network\*` → `Cake\Http\*`
-   - `$this->request->params[...]` en accès tableau → `getParam()`
-   - `Router::parse()` (supprimé en 4.x) dans `Admin/PhotosController::delete()`
-   - `TableRegistry::get()` → `TableRegistry::getTableLocator()->get()`
-   - templates `.ctp` → `.php` en CakePHP 4
-6. **`unlink()` sans `file_exists()`** dans `Admin/PhotosController::delete()` →
-   warning PHP si une déclinaison manque.
-7. `composer.json` déclare `"minimum-stability": "beta"` et un `php` minimum faux.
-8. `config/asset_compress.ini` contient encore `baseUrl = http://cdn.example.com`
-   (valeur d'exemple).
-9. Archives SQL du schéma corrompues (cf. plus haut).
-
-## Pistes de mise à jour (issues du README d'origine)
-
-- Modulo 4 sur le numéro de semaine pour faire varier les galeries affichées.
-- Boutique e-commerce pour les tirages.
-- Nouvelle page d'accueil.
-- Sécuriser les liens d'images via une librairie dédiée (le `admad/cakephp-glide`
-  déjà présent dans `composer.json` était prévu pour ça).
-
-## Règles de travail sur ce dépôt
-
-- **Ne jamais commiter `config/app.php`** (identifiants BDD, `Security.salt`, SMTP) —
-  il est gitignoré, garder cet état.
-- Ne pas ajouter d'images ou d'archives binaires ; le dépôt est déjà surdimensionné.
-- `vendor/`, `tmp/`, `logs/` sont ignorés — ne pas les versionner.
-- Pas de CI active : vérifier manuellement (`php -l`) et décrire précisément ce qui
-  n'a pas pu être vérifié.
-- Le dépôt d'origine est GitLab ; ce dépôt GitHub peut être partiel. Vérifier
-  l'historique avant de supposer qu'un fichier manque.
+- **Ne jamais committer `config/app_local.php`** (identifiants BDD, salt) — gitignoré,
+  garder cet état.
+- Ne jamais committer d'image, de dump SQL ni d'archive binaire.
+- Après toute modification de `resources/`, relancer `npm run build` et committer
+  `webroot/build/`.
+- Décrire précisément ce qui n'a pas pu être vérifié : la version exacte du MySQL de
+  prod, la présence d'AVIF dans le GD de l'hébergeur, la réécriture Apache et l'envoi
+  SMTP réel ne sont pas testables ici.

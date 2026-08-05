@@ -1,0 +1,104 @@
+@import 'tailwindcss';
+
+/*
+ * Polices auto-hébergées (pas de CDN Google : RGPD + performance).
+ * Sous-ensemble latin uniquement : le site est en français, embarquer le
+ * cyrillique, le grec et les glyphes math triplerait le poids pour rien.
+ */
+@import '@fontsource/oswald/latin-300.css';
+@import '@fontsource/oswald/latin-400.css';
+@import '@fontsource/oswald/latin-500.css';
+@import '@fontsource/open-sans/latin-300.css';
+@import '@fontsource/open-sans/latin-400.css';
+@import '@fontsource/open-sans/latin-600.css';
+
+/*
+ * Thème « légèrement inspiré » de l'ancien site : fond sombre, accent corail
+ * #e85356 (couleur signature d'origine), titres Oswald, corps Open Sans.
+ * Tailwind 4 se configure en CSS — il n'y a plus de tailwind.config.js.
+ */
+@theme {
+    --color-noir: #0d0d0d;
+    --color-noir-clair: #1a1a1a;
+    --color-noir-carte: #212121;
+    --color-gris: #7f7f7f;
+    --color-gris-clair: #d9d9d9;
+    --color-blanc-casse: #f4f2f0;
+    --color-corail: #e85356;
+    --color-corail-sombre: #c93f42;
+
+    --font-display: 'Oswald', 'Futura', 'Trebuchet MS', sans-serif;
+    --font-sans: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+
+    --tracking-titre: 0.18em;
+
+    --ease-doux: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-noir);
+        color: var(--color-blanc-casse);
+        font-family: var(--font-sans);
+        font-weight: 300;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+        font-family: var(--font-display);
+        font-weight: 300;
+        letter-spacing: var(--tracking-titre);
+        text-transform: uppercase;
+    }
+
+    a {
+        transition: color 0.25s var(--ease-doux);
+    }
+
+    /* Anneau de focus toujours visible : prérequis d'accessibilité. */
+    :focus-visible {
+        outline: 2px solid var(--color-corail);
+        outline-offset: 3px;
+    }
+
+    /*
+     * Les éléments animés par GSAP partent invisibles. Sans ce garde-fou, un
+     * échec de chargement du JS laisserait la page vide : la règle est donc
+     * annulée dès que le document porte la classe `js-pret`, et jamais
+     * appliquée quand l'utilisateur refuse les animations.
+     */
+    [data-anim]:not(.js-pret [data-anim]) {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@utility lien-souligne {
+    background-image: linear-gradient(var(--color-corail), var(--color-corail));
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.35s var(--ease-doux);
+
+    &:hover,
+    &:focus-visible {
+        background-size: 100% 1px;
+    }
+}

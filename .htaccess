@@ -1,0 +1,31 @@
+# Uncomment the following to prevent the httpoxy vulnerability
+# See: https://httpoxy.org/
+#<IfModule mod_headers.c>
+#    RequestHeader unset Proxy
+#</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+
+    # Laisse passer les vérifications ACME (renouvellement des certificats).
+    RewriteRule ^(\.well-known/.*)$ $1 [L]
+
+    # Force HTTPS, sauf en local et sur un éventuel domaine de préproduction.
+    # %{HTTPS} plutôt que %{ENV:HTTPS} : derrière le proxy de certains mutualisés,
+    # la variable d'environnement n'est pas toujours renseignée.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^local\. [NC]
+    RewriteCond %{HTTP_HOST} !^staging\. [NC]
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+    # Redirige www vers le domaine nu, en une seule redirection.
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+    RewriteRule ^$ webroot/ [L]
+    RewriteRule (.*) webroot/$1 [L]
+</IfModule>
+
+# Pas d'index de répertoire.
+Options -Indexes
