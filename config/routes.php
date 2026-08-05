@@ -106,6 +106,14 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/contact', ['controller' => 'Messages', 'action' => 'contact']);
 
         /*
+         * Référencement. Générés à la demande : le volume reste modeste et un
+         * fichier statique finirait périmé.
+         */
+        $builder->connect('/sitemap.xml', ['controller' => 'Sitemap', 'action' => 'index']);
+        $builder->connect('/robots.txt', ['controller' => 'Sitemap', 'action' => 'robots']);
+        $builder->connect('/rss', ['controller' => 'Sitemap', 'action' => 'rss']);
+
+        /*
          * Connect catchall routes for all controllers.
          *
          * The `fallbacks` method is a shortcut for

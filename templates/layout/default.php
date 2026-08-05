@@ -17,6 +17,10 @@ $description = $this->fetch('meta_description')
     <title><?= h($titre) ?></title>
     <meta name="description" content="<?= h($description) ?>">
     <?= $this->Html->meta('icon') ?>
+    <link rel="alternate" type="application/rss+xml" title="Journal — Chancel Photographie"
+          href="<?= $this->Url->build('/rss') ?>">
+    <?php // Canonique : evite que /portfolio/japon et /portfolio/voyage/japon soient vus comme deux pages distinctes. ?>
+    <link rel="canonical" href="<?= h($this->Url->build($this->getRequest()->getPath(), ['fullBase' => true])) ?>">
 
     <?= $this->Vite->asset('resources/js/app.js') ?>
 

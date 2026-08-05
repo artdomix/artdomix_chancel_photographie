@@ -62,4 +62,46 @@ class FrontPublicTest extends TestCase
 
         $this->assertResponseCode(404);
     }
+
+    /**
+     * @return void
+     */
+    public function testPlanDeSiteEtRobotsRepondent(): void
+    {
+        $this->get('/sitemap.xml');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<urlset');
+
+        $this->get('/robots.txt');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Disallow: /admin');
+    }
+
+    /**
+     * Le plan de site ne doit jamais exposer une URL privée : ce serait donner
+     * aux moteurs la liste des liens de partage.
+     *
+     * @return void
+     */
+    public function testPlanDeSiteNExposePasLesUrlPrivees(): void
+    {
+        $this->get('/sitemap.xml');
+
+        $this->assertResponseNotContains('/m/');
+        $this->assertResponseNotContains('/g/');
+        $this->assertResponseNotContains('/admin');
+        $this->assertResponseNotContains('/membre');
+    }
+
+    /**
+     * @return void
+     */
+    public function testFluxRssEstValide(): void
+    {
+        $this->get('/rss');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('<rss version="2.0"');
+        $this->assertResponseContains('<channel>');
+    }
 }
