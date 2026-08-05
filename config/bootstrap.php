@@ -230,6 +230,15 @@ ServerRequest::addDetector('tablet', function ($request) {
 // \Cake\Utility\Inflector::rules('irregular', ['red' => 'redlings']);
 // \Cake\Utility\Inflector::rules('uninflected', ['dontinflectme']);
 
+/*
+ * Le domaine est en français, l'inflecteur raisonne en anglais : sans ces règles
+ * il singularise `galeries` en « Galery » et pluralise `config` en `configs`
+ * (alors que la table s'appelle bien `config`). Les poser ici évite d'avoir à
+ * corriger à la main chaque classe et chaque association générées par bake.
+ */
+\Cake\Utility\Inflector::rules('irregular', ['galerie' => 'galeries']);
+\Cake\Utility\Inflector::rules('uninflected', ['config']);
+
 // set a custom date and time format
 // see https://book.cakephp.org/5/en/core-libraries/time.html#setting-the-default-locale-and-format-string
 // and https://unicode-org.github.io/icu/userguide/format_parse/datetime/#datetime-format-syntax
