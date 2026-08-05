@@ -104,4 +104,54 @@ class FrontPublicTest extends TestCase
         $this->assertResponseContains('<rss version="2.0"');
         $this->assertResponseContains('<channel>');
     }
+
+    /**
+     * Un jeton CSRF périmé — cas typique d'un onglet resté ouvert, ou d'un
+     * changement de `Security.salt` qui invalide tous les cookies déjà posés —
+     * doit renvoyer au formulaire avec un message, pas afficher une page 403.
+     *
+     * @return void
+     */
+    public function testJetonCsrfPerimeRenvoieAuFormulaire(): void
+    {
+        // Cookie et champ volontairement incohérents : c'est ce que voit le
+        // serveur quand le cookie a été signé avec un autre salt.
+        $this->configRequest([
+            'cookies' => ['csrfToken' => 'jeton-perime-et-invalide'],
+        ]);
+
+        $this->post('/connexion', [
+            '_csrfToken' => 'jeton-perime-et-invalide',
+            'email' => 'inconnu@test.local',
+            'password' => 'peu importe',
+        ]);
+
+        $this->assertRedirectContains('/connexion');
+        $this->assertSession(
+            'Votre session a expiré pour des raisons de sécurité. Merci de renvoyer le formulaire.',
+            'Flash.flash.0.message',
+        );
+    }
+
+    /**
+     * En revanche une requête htmx doit recevoir le refus tel quel : rediriger
+     * un fragment n'aurait aucun sens pour l'appelant.
+     *
+     * @return void
+     */
+    public function testJetonCsrfPerimeEnHtmxResteUnRefus(): void
+    {
+        $this->configRequest([
+            'cookies' => ['csrfToken' => 'jeton-perime-et-invalide'],
+            'headers' => ['HX-Request' => 'true'],
+        ]);
+
+        $this->post('/connexion', [
+            '_csrfToken' => 'jeton-perime-et-invalide',
+            'email' => 'inconnu@test.local',
+            'password' => 'peu importe',
+        ]);
+
+        $this->assertResponseCode(403);
+    }
 }

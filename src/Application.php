@@ -16,6 +16,7 @@ declare(strict_types=1);
  */
 namespace App;
 
+use App\Middleware\CsrfExpireMiddleware;
 use App\Middleware\HostHeaderMiddleware;
 use App\Service\Image\DerivativeGenerator;
 use App\Service\Image\ExifReader;
@@ -40,6 +41,7 @@ use Cake\Http\BaseApplication;
 use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
+use Cake\Http\ServerRequest;
 use Cake\ORM\Locator\TableLocator;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Middleware\AssetMiddleware;
@@ -113,8 +115,16 @@ class Application extends BaseApplication implements
 
             // Cross Site Request Forgery (CSRF) Protection Middleware
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
+            // Placé AVANT le CSRF pour intercepter son exception : un jeton
+            // périmé doit renvoyer au formulaire, pas afficher une page 403.
+            ->add(new CsrfExpireMiddleware())
+
             ->add(new CsrfProtectionMiddleware([
                 'httponly' => true,
+                // Explicite plutôt que laissé à null : les navigateurs
+                // appliquent Lax par défaut, mais l'écrire aligne le cookie CSRF
+                // sur le cookie de session et rend le comportement lisible.
+                'samesite' => 'Lax',
             ]))
 
             // L'ordre compte : l'authentification identifie le visiteur, puis
