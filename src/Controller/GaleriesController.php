@@ -45,6 +45,10 @@ class GaleriesController extends AppController
 
         $this->Galeries = $this->fetchTable('Galeries');
         $this->autoriserPublic(['partage', 'deverrouiller', 'favori', 'telecharger']);
+
+        // La bascule d'un favori part d'un bouton htmx, pas d'un formulaire :
+        // elle porte l'en-tête CSRF mais aucun jeton de champs.
+        $this->actionsJavascript(['favori']);
     }
 
     /**

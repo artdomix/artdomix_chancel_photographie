@@ -57,6 +57,26 @@ class AppController extends Controller
     }
 
     /**
+     * Dispense certaines actions du jeton anti-falsification de formulaire.
+     *
+     * `FormProtection` valide un jeton `_Token` calculé sur les champs du
+     * formulaire rendu. C'est excellent pour un formulaire classique, mais
+     * inapplicable à une requête émise en JavaScript (upload par glisser-déposer,
+     * réordonnancement, bascule d'un favori) qui ne provient d'aucun formulaire.
+     *
+     * **La protection CSRF reste entière** : ces requêtes doivent présenter
+     * l'en-tête `X-CSRF-Token`, vérifié par `CsrfProtectionMiddleware`. Ce qui
+     * est levé ici, c'est uniquement le contrôle d'intégrité des champs.
+     *
+     * @param list<string> $actions Actions pilotées en JavaScript.
+     * @return void
+     */
+    protected function actionsJavascript(array $actions): void
+    {
+        $this->FormProtection->setConfig('unlockedActions', $actions);
+    }
+
+    /**
      * Déclare les actions accessibles sans être connecté.
      *
      * À appeler dans le `beforeFilter()` des contrôleurs publics. Passer par
