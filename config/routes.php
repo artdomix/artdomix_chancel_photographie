@@ -85,6 +85,9 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/m/deverrouiller/*', ['controller' => 'Moodboards', 'action' => 'deverrouiller']);
         $builder->connect('/m/commenter/*', ['controller' => 'Moodboards', 'action' => 'commenter']);
         $builder->connect('/m/*', ['controller' => 'Moodboards', 'action' => 'partage']);
+        $builder->connect('/g/deverrouiller/*', ['controller' => 'Galeries', 'action' => 'deverrouiller']);
+        $builder->connect('/g/favori/*', ['controller' => 'Galeries', 'action' => 'favori']);
+        $builder->connect('/g/telecharger/*', ['controller' => 'Galeries', 'action' => 'telecharger']);
         $builder->connect('/g/*', ['controller' => 'Galeries', 'action' => 'partage']);
 
         /*

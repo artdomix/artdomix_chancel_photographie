@@ -1,0 +1,50 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Galerie $galerie
+ * @var list<int> $favoris
+ */
+?>
+<section class="mx-auto max-w-7xl px-6 py-12">
+    <h1 class="text-3xl md:text-5xl"><?= h($galerie->nom) ?></h1>
+    <?php if ($galerie->description) : ?>
+        <p class="mt-4 max-w-2xl text-gris"><?= h($galerie->description) ?></p>
+    <?php endif; ?>
+
+    <div class="mt-6 flex flex-wrap items-center gap-6 text-sm text-gris">
+        <span><?= h((string)count($galerie->photos)) ?> photos</span>
+        <?php if ($galerie->quota_favoris > 0) : ?>
+            <span role="status">
+                <?= h((string)count($favoris)) ?> / <?= h((string)$galerie->quota_favoris) ?> retenues
+            </span>
+        <?php endif; ?>
+        <?php if ($galerie->telechargement_actif) : ?>
+            <a class="lien-souligne text-corail"
+               href="<?= $this->Url->build('/g/telecharger/' . $galerie->share_token) ?>">
+                Télécharger la sélection (ZIP)
+            </a>
+        <?php endif; ?>
+    </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-6 pb-24">
+    <?php if (count($galerie->photos) === 0) : ?>
+        <p class="py-16 text-center text-gris">Cette galerie est encore vide.</p>
+    <?php else : ?>
+        <div data-anim="grille" data-galerie
+             class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <?php foreach ($galerie->photos as $photo) : ?>
+                <div data-anim-item>
+                    <?= $this->Photo->vignette($photo, [
+                        'sizes' => '(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw',
+                    ]) ?>
+                    <?= $this->element('bouton_favori', [
+                        'galerie' => $galerie,
+                        'photo' => $photo,
+                        'actif' => in_array($photo->id, $favoris, true),
+                    ]) ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
