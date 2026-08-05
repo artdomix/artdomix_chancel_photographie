@@ -17,6 +17,10 @@ declare(strict_types=1);
 namespace App;
 
 use App\Middleware\HostHeaderMiddleware;
+use App\Service\Image\DerivativeGenerator;
+use App\Service\Image\ExifReader;
+use App\Service\Image\PhotoUploader;
+use App\Service\Image\UploadValidator;
 use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
@@ -37,10 +41,12 @@ use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
 use Cake\ORM\Locator\TableLocator;
+use Cake\ORM\TableRegistry;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
 use Cake\Routing\Router;
 use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
 
 /**
  * Application setup class.
@@ -198,8 +204,50 @@ class Application extends BaseApplication implements
      */
     public function services(ContainerInterface $container): void
     {
-        // Allow your Tables to be dependency injected
-        //$container->delegate(new \Cake\ORM\Locator\TableContainer());
+        // Les réglages du filigrane vivent en base (table `config`) pour que le
+        // photographe puisse les changer sans toucher au code. On les lit ici,
+        // au moment de construire le service.
+        $container->add(DerivativeGenerator::class, function (): DerivativeGenerator {
+            return new DerivativeGenerator(WWW_ROOT . 'media' . DS . 'photos', $this->reglagesImage());
+        });
+
+        $container->add(ExifReader::class);
+        $container->add(UploadValidator::class);
+
+        $container->add(PhotoUploader::class)
+            ->addArgument(ROOT . DS . 'storage' . DS . 'originaux')
+            ->addArgument(DerivativeGenerator::class)
+            ->addArgument(ExifReader::class)
+            ->addArgument(UploadValidator::class);
+    }
+
+    /**
+     * Réglages d'image lus depuis la table `config`.
+     *
+     * Encapsulé dans un try/catch : les commandes console peuvent tourner avant
+     * que la base n'existe (première installation, `migrations migrate`), et
+     * l'absence de réglage ne doit pas empêcher l'application de démarrer.
+     *
+     * @return array<string, mixed>
+     */
+    protected function reglagesImage(): array
+    {
+        try {
+            $table = TableRegistry::getTableLocator()->get('Config');
+            $lignes = $table->find()->where(['cle LIKE' => 'images.%'])->all();
+
+            $reglages = [];
+
+            foreach ($lignes as $ligne) {
+                $reglages[str_replace('images.', '', $ligne->cle)] = $ligne->valeur;
+            }
+
+            $reglages['filigrane'] = !empty($reglages['filigrane']) && $reglages['filigrane'] !== '0';
+
+            return $reglages;
+        } catch (Throwable) {
+            return ['filigrane' => false];
+        }
     }
 
     /**
