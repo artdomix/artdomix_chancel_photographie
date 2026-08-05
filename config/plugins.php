@@ -32,5 +32,11 @@ return [
     'Bake' => ['onlyCli' => true, 'optional' => true],
     'Migrations' => ['onlyCli' => true],
 
+    // Captcha du formulaire de contact. Le moteur mathematique de dereuromark
+    // demande une petite operation plutot qu'un texte deforme illisible, et ne
+    // depend d'aucun service tiers (pas de reCAPTCHA, donc rien a declarer au
+    // RGPD).
+    'Captcha' => [],
+
     // Additional plugins here
 ];

@@ -4,6 +4,7 @@ import htmx from 'htmx.org';
 
 import { initAnimations } from './animations/index.js';
 import { initLightbox } from './animations/lightbox.js';
+import { initCarte } from './ui/carte.js';
 import { initMenu } from './ui/menu.js';
 
 // htmx est utilisé depuis les attributs HTML : il doit être joignable globalement.
@@ -18,6 +19,7 @@ document.documentElement.classList.add('js-pret');
 
 const demarrer = () => {
     initMenu();
+    initCarte();
     initAnimations();
     initLightbox();
 };

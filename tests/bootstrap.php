@@ -57,4 +57,9 @@ ConnectionHelper::addTestAliases();
 // use Cake\TestSuite\Fixture\SchemaLoader;
 // (new SchemaLoader())->loadSqlFiles('./tests/schema.sql', 'test');
 
-(new Migrator())->run();
+// Migrations de l'application ET du plugin Captcha : le formulaire de contact
+// s'appuie sur la table `captchas`, sans laquelle la page ne se rend pas.
+(new Migrator())->runMany([
+    [],
+    ['plugin' => 'Captcha'],
+]);

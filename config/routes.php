@@ -66,7 +66,7 @@ return function (RouteBuilder $routes): void {
     });
 
     $routes->scope('/', function (RouteBuilder $builder): void {
-        $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
+        $builder->connect('/', ['controller' => 'Pages', 'action' => 'accueil']);
 
         /*
          * Comptes. `/admin` mène au tableau de bord, et le middleware redirige

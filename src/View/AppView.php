@@ -38,5 +38,8 @@ class AppView extends View
     public function initialize(): void
     {
         $this->addHelper('Vite');
+        $this->addHelper('Photo');
+        $this->addHelper('Seo');
+        $this->addHelper('Captcha.Captcha');
     }
 }

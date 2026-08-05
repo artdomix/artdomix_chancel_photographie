@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Model\Entity\User;
+use App\Model\Table\UsersTable;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 use Cake\I18n\DateTime;
@@ -22,6 +23,14 @@ use Cake\Utility\Security;
  */
 class UtilisateursController extends AppController
 {
+    /**
+     * Déclarée explicitement : depuis PHP 8.2, affecter une propriété non
+     * déclarée émet une dépréciation.
+     *
+     * @var \App\Model\Table\UsersTable
+     */
+    protected UsersTable $Users;
+
     /**
      * @param \Cake\Event\EventInterface $event Événement de démarrage.
      * @return void
