@@ -82,6 +82,8 @@ return function (RouteBuilder $routes): void {
          * Liens de partage. Le jeton est opaque et ne laisse rien deviner du
          * contenu ni de son identifiant en base.
          */
+        $builder->connect('/m/deverrouiller/*', ['controller' => 'Moodboards', 'action' => 'deverrouiller']);
+        $builder->connect('/m/commenter/*', ['controller' => 'Moodboards', 'action' => 'commenter']);
         $builder->connect('/m/*', ['controller' => 'Moodboards', 'action' => 'partage']);
         $builder->connect('/g/*', ['controller' => 'Galeries', 'action' => 'partage']);
 

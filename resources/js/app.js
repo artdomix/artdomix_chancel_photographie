@@ -4,6 +4,7 @@ import htmx from 'htmx.org';
 
 import { initAnimations } from './animations/index.js';
 import { initLightbox } from './animations/lightbox.js';
+import { initMoodboard } from './moodboard/index.js';
 import { initCarte } from './ui/carte.js';
 import { initMenu } from './ui/menu.js';
 
@@ -20,6 +21,7 @@ document.documentElement.classList.add('js-pret');
 const demarrer = () => {
     initMenu();
     initCarte();
+    initMoodboard();
     initAnimations();
     initLightbox();
 };

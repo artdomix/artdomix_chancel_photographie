@@ -90,6 +90,21 @@
     }
 }
 
+/*
+ * Les vignettes d'un moodboard partent invisibles : les thèmes GSAP les
+ * révèlent. Comme pour `[data-anim]`, la règle ne s'applique qu'une fois le JS
+ * en place, sinon un bundle qui ne charge pas laisserait la sélection vide.
+ */
+.js-pret [data-moodboard-item] {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .js-pret [data-moodboard-item] {
+        opacity: 1;
+    }
+}
+
 @utility lien-souligne {
     background-image: linear-gradient(var(--color-corail), var(--color-corail));
     background-size: 0% 1px;
