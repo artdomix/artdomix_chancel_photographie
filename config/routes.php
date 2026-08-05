@@ -49,18 +49,56 @@ return function (RouteBuilder $routes): void {
      */
     $routes->setRouteClass(DashedRoute::class);
 
+    /*
+     * Back-office d'administration : /admin/*
+     */
+    $routes->prefix('Admin', function (RouteBuilder $builder): void {
+        $builder->connect('/', ['controller' => 'Tableau', 'action' => 'index']);
+        $builder->fallbacks(DashedRoute::class);
+    });
+
+    /*
+     * Espace membre (clients) : /membre/*
+     */
+    $routes->prefix('Membre', ['path' => '/membre'], function (RouteBuilder $builder): void {
+        $builder->connect('/', ['controller' => 'Tableau', 'action' => 'index']);
+        $builder->fallbacks(DashedRoute::class);
+    });
+
     $routes->scope('/', function (RouteBuilder $builder): void {
-        /*
-         * Here, we are connecting '/' (base path) to a controller called 'Pages',
-         * its action called 'display', and we pass a param to select the view file
-         * to use (in this case, templates/Pages/home.php)...
-         */
         $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
 
         /*
-         * ...and connect the rest of 'Pages' controller's URLs.
+         * Comptes. `/admin` mène au tableau de bord, et le middleware redirige
+         * ici tant que le visiteur n'est pas connecté : l'URL que le photographe
+         * a dans ses favoris depuis des années continue donc de fonctionner.
          */
-        $builder->connect('/pages/*', 'Pages::display');
+        $builder->connect('/connexion', ['controller' => 'Utilisateurs', 'action' => 'connexion']);
+        $builder->connect('/deconnexion', ['controller' => 'Utilisateurs', 'action' => 'deconnexion']);
+        $builder->connect('/mot-de-passe-oublie', ['controller' => 'Utilisateurs', 'action' => 'motDePasseOublie']);
+        $builder->connect('/reinitialiser/*', ['controller' => 'Utilisateurs', 'action' => 'reinitialiser']);
+
+        /*
+         * Liens de partage. Le jeton est opaque et ne laisse rien deviner du
+         * contenu ni de son identifiant en base.
+         */
+        $builder->connect('/m/*', ['controller' => 'Moodboards', 'action' => 'partage']);
+        $builder->connect('/g/*', ['controller' => 'Galeries', 'action' => 'partage']);
+
+        /*
+         * Portfolio. Le `*` accepte un chemin imbriqué (`/portfolio/voyage/japon`)
+         * pour refléter l'arbre des albums dans l'URL.
+         */
+        $builder->connect('/portfolio', ['controller' => 'Portfolio', 'action' => 'index']);
+        $builder->connect('/portfolio/*', ['controller' => 'Portfolio', 'action' => 'album']);
+        $builder->connect('/photo/*', ['controller' => 'Portfolio', 'action' => 'photo']);
+        $builder->connect('/tag/*', ['controller' => 'Portfolio', 'action' => 'tag']);
+        $builder->connect('/recherche', ['controller' => 'Portfolio', 'action' => 'recherche']);
+        $builder->connect('/carte', ['controller' => 'Portfolio', 'action' => 'carte']);
+
+        $builder->connect('/blog', ['controller' => 'Articles', 'action' => 'index']);
+        $builder->connect('/blog/*', ['controller' => 'Articles', 'action' => 'voir']);
+        $builder->connect('/contact', ['controller' => 'Messages', 'action' => 'contact']);
 
         /*
          * Connect catchall routes for all controllers.

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -141,5 +142,44 @@ class UsersTable extends Table
         $rules->add($rules->isUnique(['email']), ['errorField' => 'email']);
 
         return $rules;
+    }
+
+    /**
+     * Comptes actifs uniquement.
+     *
+     * Utilisé comme resolver de l'identifiant : désactiver un compte doit
+     * suffire à interdire la connexion, sans avoir à changer le mot de passe.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query Requête à filtrer.
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    public function findActifs(SelectQuery $query): SelectQuery
+    {
+        return $query->where([$this->aliasField('actif') => true]);
+    }
+
+    /**
+     * Règles appliquées au choix d'un mot de passe.
+     *
+     * Séparées de la validation par défaut : celle-ci s'applique aussi aux
+     * modifications de profil qui ne touchent pas au mot de passe.
+     *
+     * Longueur minimale de 12 caractères plutôt que 8, sans exigence de
+     * caractères spéciaux : c'est la recommandation actuelle de l'ANSSI et du
+     * NIST — une phrase longue résiste mieux qu'un « P@ss1! » court.
+     *
+     * @param \Cake\Validation\Validator $validator Validateur à configurer.
+     * @return \Cake\Validation\Validator
+     */
+    public function validationMotDePasse(Validator $validator): Validator
+    {
+        $validator
+            ->scalar('password')
+            ->requirePresence('password')
+            ->notEmptyString('password', __('Le mot de passe est obligatoire.'))
+            ->minLength('password', 12, __('12 caractères minimum.'))
+            ->maxLength('password', 4096);
+
+        return $validator;
     }
 }

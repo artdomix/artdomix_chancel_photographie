@@ -17,6 +17,16 @@ declare(strict_types=1);
 namespace App;
 
 use App\Middleware\HostHeaderMiddleware;
+use Authentication\AuthenticationService;
+use Authentication\AuthenticationServiceInterface;
+use Authentication\AuthenticationServiceProviderInterface;
+use Authentication\Identifier\PasswordIdentifier;
+use Authentication\Middleware\AuthenticationMiddleware;
+use Authorization\AuthorizationService;
+use Authorization\AuthorizationServiceInterface;
+use Authorization\AuthorizationServiceProviderInterface;
+use Authorization\Middleware\AuthorizationMiddleware;
+use Authorization\Policy\OrmResolver;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Datasource\FactoryLocator;
@@ -29,6 +39,8 @@ use Cake\Http\MiddlewareQueue;
 use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
+use Cake\Routing\Router;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Application setup class.
@@ -38,7 +50,9 @@ use Cake\Routing\Middleware\RoutingMiddleware;
  *
  * @extends \Cake\Http\BaseApplication<\App\Application>
  */
-class Application extends BaseApplication
+class Application extends BaseApplication implements
+    AuthenticationServiceProviderInterface,
+    AuthorizationServiceProviderInterface
 {
     /**
      * Load all the application configuration and bootstrap logic.
@@ -95,9 +109,84 @@ class Application extends BaseApplication
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
             ->add(new CsrfProtectionMiddleware([
                 'httponly' => true,
-            ]));
+            ]))
+
+            // L'ordre compte : l'authentification identifie le visiteur, puis
+            // l'autorisation décide. Les deux sont montées ici, globalement, pour
+            // qu'aucune zone ne puisse être oubliée. C'est l'inverse de l'ancien
+            // site, qui ouvrait tout puis refermait sur le préfixe `admin` — un
+            // oubli y exposait la page au lieu de la fermer.
+            ->add(new AuthenticationMiddleware($this))
+            ->add(new AuthorizationMiddleware($this));
 
         return $middlewareQueue;
+    }
+
+    /**
+     * Service d'authentification : qui est le visiteur ?
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request Requête courante.
+     * @return \Authentication\AuthenticationServiceInterface
+     */
+    public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
+    {
+        $urlConnexion = Router::url([
+            'prefix' => false,
+            'controller' => 'Utilisateurs',
+            'action' => 'connexion',
+        ]);
+
+        $service = new AuthenticationService([
+            'unauthenticatedRedirect' => $urlConnexion,
+            'queryParam' => 'redirect',
+            // Désactivée par défaut dans le plugin pour raisons de compatibilité.
+            // Sans elle, un `?redirect=https://ailleurs` renverrait le visiteur
+            // hors du site après connexion — un tremplin de hameçonnage idéal.
+            'redirectValidation' => ['enabled' => true],
+        ]);
+
+        $champs = [
+            PasswordIdentifier::CREDENTIAL_USERNAME => 'email',
+            PasswordIdentifier::CREDENTIAL_PASSWORD => 'password',
+        ];
+
+        $identifiant = [
+            'className' => 'Authentication.Password',
+            'fields' => $champs,
+            'resolver' => [
+                'className' => 'Authentication.Orm',
+                'userModel' => 'Users',
+                // Un compte désactivé ne doit plus pouvoir se connecter, même
+                // avec le bon mot de passe.
+                'finder' => 'actifs',
+            ],
+        ];
+
+        // La session passe en premier : sur une navigation normale, inutile de
+        // retoucher la base à chaque requête.
+        $service->loadAuthenticator('Authentication.Session', [
+            'fields' => $champs,
+            'identifier' => $identifiant,
+        ]);
+        $service->loadAuthenticator('Authentication.Form', [
+            'fields' => $champs,
+            'loginUrl' => $urlConnexion,
+            'identifier' => $identifiant,
+        ]);
+
+        return $service;
+    }
+
+    /**
+     * Service d'autorisation : ce visiteur a-t-il le droit ?
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request Requête courante.
+     * @return \Authorization\AuthorizationServiceInterface
+     */
+    public function getAuthorizationService(ServerRequestInterface $request): AuthorizationServiceInterface
+    {
+        // Résout chaque entité vers la policy correspondante dans src/Policy/.
+        return new AuthorizationService(new OrmResolver());
     }
 
     /**

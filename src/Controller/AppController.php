@@ -1,40 +1,28 @@
 <?php
 declare(strict_types=1);
 
-/**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- *
- * Licensed under The MIT License
- * For full copyright and license information, please see the LICENSE.txt
- * Redistributions of files must retain the above copyright notice.
- *
- * @copyright Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link      https://cakephp.org CakePHP(tm) Project
- * @since     0.2.9
- * @license   https://opensource.org/licenses/mit-license.php MIT License
- */
 namespace App\Controller;
 
 use Cake\Controller\Controller;
+use Cake\Event\EventInterface;
 
 /**
- * Application Controller
+ * Contrôleur de base.
  *
- * Add your application-wide methods in the class below, your controllers
- * will inherit them.
+ * La règle du projet tient en une phrase : **tout est refusé par défaut**.
  *
- * @link https://book.cakephp.org/5/en/controllers.html#the-app-controller
+ * L'ancien site faisait l'inverse — `$this->Auth->allow()` ouvrait l'ensemble
+ * des actions, puis `deny()` refermait uniquement si le préfixe valait `admin`.
+ * Oublier ce préfixe sur une nouvelle zone la rendait publique sans que rien ne
+ * le signale. Ici, une action non déclarée publique est inaccessible : l'oubli
+ * produit une erreur visible plutôt qu'une fuite silencieuse.
+ *
+ * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class AppController extends Controller
 {
     /**
-     * Initialization hook method.
-     *
-     * Use this method to add common initialization code like loading components.
-     *
-     * e.g. `$this->loadComponent('FormProtection');`
-     *
      * @return void
      */
     public function initialize(): void
@@ -42,11 +30,53 @@ class AppController extends Controller
         parent::initialize();
 
         $this->loadComponent('Flash');
+        $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('Authorization.Authorization');
 
-        /*
-         * Enable the following component for recommended CakePHP form protection settings.
-         * see https://book.cakephp.org/5/en/controllers/components/form-protection.html
-         */
-        //$this->loadComponent('FormProtection');
+        // Protection contre la falsification de formulaire : l'ancien site n'en
+        // avait aucune sur son back-office.
+        $this->loadComponent('FormProtection', [
+            'unlockedActions' => [],
+        ]);
+    }
+
+    /**
+     * @param \Cake\Event\EventInterface $event Événement de démarrage.
+     * @return void
+     */
+    public function beforeFilter(EventInterface $event): void
+    {
+        parent::beforeFilter($event);
+
+        // Les réponses htmx sont des fragments : elles ne doivent pas embarquer
+        // le layout complet, sinon chaque échange réinjecterait l'en-tête et le
+        // pied de page au milieu de la page.
+        if ($this->request->is('htmx')) {
+            $this->viewBuilder()->disableAutoLayout();
+        }
+    }
+
+    /**
+     * Déclare les actions accessibles sans être connecté.
+     *
+     * À appeler dans le `beforeFilter()` des contrôleurs publics. Passer par
+     * cette méthode plutôt que d'appeler directement le composant rend le fait
+     * explicite et cherchable : `grep -r autoriserPublic src/` donne la liste
+     * complète des points d'entrée ouverts.
+     *
+     * @param list<string> $actions Actions à ouvrir au public.
+     * @return void
+     */
+    protected function autoriserPublic(array $actions): void
+    {
+        $this->Authentication->allowUnauthenticated($actions);
+
+        // L'autorisation n'est court-circuitée que si l'action EN COURS fait
+        // partie de la liste. Appeler `skipAuthorization()` sans cette condition
+        // désarmerait le contrôle pour toutes les autres actions du contrôleur —
+        // exactement le genre d'ouverture trop large qui a piégé l'ancien site.
+        if (in_array($this->request->getParam('action'), $actions, true)) {
+            $this->Authorization->skipAuthorization();
+        }
     }
 }

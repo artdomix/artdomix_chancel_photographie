@@ -43,6 +43,7 @@ use Cake\Log\Log;
 use Cake\Mailer\Mailer;
 use Cake\Mailer\TransportFactory;
 use Cake\Routing\Router;
+use Cake\Utility\Inflector;
 use Cake\Utility\Security;
 use Detection\MobileDetect;
 use function Cake\Core\env;
@@ -236,8 +237,19 @@ ServerRequest::addDetector('tablet', function ($request) {
  * (alors que la table s'appelle bien `config`). Les poser ici évite d'avoir à
  * corriger à la main chaque classe et chaque association générées par bake.
  */
-\Cake\Utility\Inflector::rules('irregular', ['galerie' => 'galeries']);
-\Cake\Utility\Inflector::rules('uninflected', ['config']);
+Inflector::rules('irregular', ['galerie' => 'galeries']);
+Inflector::rules('uninflected', ['config']);
+
+/*
+ * Détecteur htmx : permet d'écrire `$this->request->is('htmx')` pour renvoyer un
+ * fragment plutôt qu'une page entière. Même principe que les détecteurs
+ * `mobile`/`tablet` de l'ancien site, mais sans dépendance externe — htmx
+ * annonce ses requêtes avec l'en-tête HX-Request.
+ */
+ServerRequest::addDetector(
+    'htmx',
+    fn(ServerRequest $request): bool => $request->getHeaderLine('HX-Request') === 'true',
+);
 
 // set a custom date and time format
 // see https://book.cakephp.org/5/en/core-libraries/time.html#setting-the-default-locale-and-format-string
