@@ -35,18 +35,31 @@ mysql -e "CREATE DATABASE chancel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_uni
 npm run build                          # OBLIGATOIRE : sans lui, aucune page n'a de style
 bin/cake migrations migrate
 bin/cake migrations migrate -p Captcha
+bin/cake seeds run ComptesSeed         # comptes d'accès (admin + membre)
 bin/cake seeds run DemoSeed            # jeu de démonstration, jamais en production
 bin/cake generer_images_demo           # visuels de remplacement pour le jeu de démo
 
 bin/cake server                        # http://localhost:8765
 ```
 
-Comptes de démonstration — **à supprimer avant toute mise en ligne** :
+### Comptes
 
-| Rôle | Identifiant | Mot de passe |
+`ComptesSeed` crée les deux comptes réels. Il est rejouable : le relancer
+réinitialise le mot de passe si celui-ci a été oublié en développement.
+
+| Rôle | Identifiant | Mot de passe initial |
 |---|---|---|
-| Administrateur | `admin@chancel.test` | `admin-demo-2026` |
-| Membre | `client@chancel.test` | `client-demo-2026` |
+| Administrateur | `dodo15@msn.com` | `artdomix` |
+| Membre | `Celine.benner@gmail.com` | `artdomix` |
+
+**Ce mot de passe est en clair dans un fichier versionné et ne fait que
+8 caractères**, là où le formulaire de changement en exige 12. Il est prévu pour
+la première connexion : à changer dès la mise en ligne, depuis
+« Mot de passe oublié » qui appliquera la règle des 12 caractères.
+
+`DemoSeed` crée en plus deux comptes de démonstration
+(`admin@chancel.test` / `admin-demo-2026` et `client@chancel.test` /
+`client-demo-2026`) — **à supprimer avant toute mise en ligne**.
 
 ## Vérifications
 
@@ -105,7 +118,16 @@ bin/cake migrations migrate -p Captcha
 Si la ligne de commande n'est pas disponible, exporter le schéma depuis un
 environnement local (`mysqldump --no-data`) et l'importer via phpMyAdmin.
 
-### 4. Créer le compte administrateur
+### 4. Créer les comptes
+
+```bash
+bin/cake seeds run ComptesSeed
+```
+
+Puis se connecter et **changer immédiatement les deux mots de passe** : celui du
+seed est en clair dans le dépôt.
+
+Pour ajouter un compte supplémentaire :
 
 ```bash
 bin/cake console
@@ -123,7 +145,8 @@ $users->saveOrFail($u);
 - [ ] `debug` à `false`
 - [ ] `Security.salt` régénéré, différent du développement
 - [ ] `App.fullBaseUrl` renseigné — requis par `HostHeaderMiddleware`
-- [ ] comptes de démonstration supprimés
+- [ ] comptes de démonstration (`*@chancel.test`) supprimés
+- [ ] mots de passe des comptes de `ComptesSeed` changés depuis leur valeur initiale
 - [ ] `config/app_local.php` **absent du dépôt** (il est gitignoré)
 - [ ] `tmp/`, `logs/`, `webroot/media/photos/`, `storage/originaux/` inscriptibles
 - [ ] HTTPS actif et redirection vérifiée (`.htaccess` racine)

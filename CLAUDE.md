@@ -44,7 +44,9 @@ mysql -e "CREATE DATABASE chancel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_uni
 
 npm run build          # OBLIGATOIRE : sans lui, aucune page n'a de style
 bin/cake migrations migrate
-bin/cake migrations seed
+bin/cake migrations migrate -p Captcha
+bin/cake seeds run ComptesSeed   # comptes d'accès réels
+bin/cake seeds run DemoSeed      # contenu de démonstration
 bin/cake server        # http://localhost:8765
 ```
 
