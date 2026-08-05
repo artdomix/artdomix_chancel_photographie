@@ -3,11 +3,15 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Model\Entity\Photo;
+use App\Model\Table\PhotosTable;
 use App\Service\Image\DerivativeGenerator;
 use Cake\Command\Command;
 use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 /**
  * Fabrique des images de remplacement pour les photos du jeu de démonstration.
@@ -63,7 +67,17 @@ class GenererImagesDemoCommand extends Command
             $temoin = $generateur->cheminVariante($photo->fichier, 'grid', 'jpeg');
 
             if (is_file($temoin) && !$args->getOption('force')) {
-                $io->verbose(sprintf('  %s : déjà présent', $photo->slug));
+                // Les fichiers sont là, mais la base peut ne pas être à jour :
+                // c'est le cas après un `seeds run` sur une base réinitialisée
+                // alors que webroot/media a survécu. Sans cette resynchronisation,
+                // `has_avif` resterait faux et le site n'émettrait plus aucune
+                // balise <source>, perdant silencieusement AVIF et WebP.
+                if ($this->resynchroniser($photo, $generateur, $photos)) {
+                    $io->out(sprintf('  %s : fichiers présents, base resynchronisée', $photo->slug));
+                    $traitees++;
+                } else {
+                    $io->verbose(sprintf('  %s : déjà présent', $photo->slug));
+                }
 
                 continue;
             }
@@ -163,5 +177,51 @@ class GenererImagesDemoCommand extends Command
         };
 
         return [$canal($h + 1 / 3), $canal($h), $canal($h - 1 / 3)];
+    }
+
+    /**
+     * Aligne les métadonnées d'une photo sur les fichiers réellement présents.
+     *
+     * Recalcule aussi le LQIP et la couleur dominante à partir du dérivé
+     * `content`, qui suffit largement pour un aperçu de 24 px de large.
+     *
+     * @param \App\Model\Entity\Photo $photo Photo à mettre à jour.
+     * @param \App\Service\Image\DerivativeGenerator $generateur Générateur, pour résoudre les chemins.
+     * @param \App\Model\Table\PhotosTable $photos Table des photos.
+     * @return bool Vrai si la ligne a été modifiée.
+     */
+    protected function resynchroniser(
+        Photo $photo,
+        DerivativeGenerator $generateur,
+        PhotosTable $photos,
+    ): bool {
+        $avif = is_file($generateur->cheminVariante($photo->fichier, 'grid', 'avif'));
+        $webp = is_file($generateur->cheminVariante($photo->fichier, 'grid', 'webp'));
+        $manqueApercu = $photo->lqip === null || $photo->couleur_dominante === null;
+
+        if ($photo->has_avif === $avif && $photo->has_webp === $webp && !$manqueApercu) {
+            return false;
+        }
+
+        $photo->has_avif = $avif;
+        $photo->has_webp = $webp;
+
+        if ($manqueApercu) {
+            $reference = $generateur->cheminVariante($photo->fichier, 'content', 'jpeg');
+
+            if (is_file($reference)) {
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read($reference);
+
+                $photo->largeur = $photo->largeur ?: $image->width();
+                $photo->hauteur = $photo->hauteur ?: $image->height();
+                $photo->lqip = 'data:image/jpeg;base64,'
+                    . base64_encode((string)(clone $image)->scale(width: 24)->toJpeg(40));
+                $photo->couleur_dominante = (clone $image)->scale(width: 1, height: 1)
+                    ->pickColor(0, 0)->toHex('#');
+            }
+        }
+
+        return (bool)$photos->save($photo);
     }
 }
