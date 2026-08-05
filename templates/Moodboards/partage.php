@@ -13,6 +13,10 @@
 
 $photos = $moodboard->photos;
 $champ = 'w-full border border-white/20 bg-noir-clair px-4 py-3 focus:border-corail';
+$theme = $moodboard->theme->value;
+
+// Les thèmes d'animation ne sont chargés que sur cette page.
+$this->append('script', $this->Assets->moodboard());
 ?>
 <section class="mx-auto max-w-7xl px-6 py-12">
     <h1 class="text-3xl md:text-5xl"><?= h($moodboard->titre) ?></h1>
@@ -24,10 +28,10 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-4 py-3 focus:border-cor
 <?php if (count($photos) === 0) : ?>
     <p class="px-6 py-20 text-center text-gris">Cette sélection est encore vide.</p>
 <?php else : ?>
-    <div data-moodboard data-theme="<?= h($moodboard->theme) ?>"
-         data-galerie class="moodboard moodboard--<?= h($moodboard->theme) ?>">
+    <div data-moodboard data-theme="<?= h($theme) ?>"
+         data-galerie class="moodboard moodboard--<?= h($theme) ?>">
 
-        <?php if ($moodboard->theme === 'mur-parallaxe') : ?>
+        <?php if ($theme === 'mur-parallaxe') : ?>
             <?php
             // Réparti en trois colonnes, que le thème anime à des vitesses
             // différentes. Le découpage est fait ici, côté serveur, pour que la
@@ -50,7 +54,7 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-4 py-3 focus:border-cor
                 <?php endforeach; ?>
             </div>
 
-        <?php elseif ($moodboard->theme === 'carrousel-pinne') : ?>
+        <?php elseif ($theme === 'carrousel-pinne') : ?>
             <div class="overflow-hidden">
                 <?php
                 // `overflow-x-auto` en repli : si le JS ne prend pas la main, la

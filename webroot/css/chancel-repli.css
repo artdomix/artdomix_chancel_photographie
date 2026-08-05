@@ -1,0 +1,44 @@
+/*
+ * Feuille de repli — CSS ordinaire, servie par le site lui-même.
+ *
+ * Tailwind est compilé dans le navigateur : entre le premier octet du HTML et la
+ * fin de cette compilation, la page n'a aucun style. Et si le CDN ne répond pas,
+ * elle n'en aura jamais. Ces quelques règles suffisent à garder un fond sombre,
+ * un texte lisible et une largeur de lecture correcte dans les deux cas.
+ *
+ * Volontairement minimale : elle ne cherche pas à reproduire la mise en page,
+ * seulement à éviter la page blanche au texte noir sur fond blanc.
+ */
+:root {
+    color-scheme: dark;
+}
+
+body {
+    margin: 0;
+    background-color: #0d0d0d;
+    color: #f4f2f0;
+    font-family: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Oswald', 'Futura', 'Trebuchet MS', sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+a {
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+:focus-visible {
+    outline: 2px solid #e85356;
+    outline-offset: 3px;
+}

@@ -4,6 +4,8 @@
  * @var iterable $albums
  */
 
+use App\Model\Enum\VisibiliteAlbum;
+
 /**
  * Affiche récursivement l'arbre, en s'appuyant sur le résultat de find('threaded').
  *
@@ -17,7 +19,7 @@ $brancher = function (iterable $noeuds, int $profondeur = 0) use (&$brancher): s
         $html .= '<li class="border-b border-white/5 py-2">';
         $html .= '<div class="flex items-center justify-between" style="padding-left:' . ($profondeur * 24) . 'px">';
         $html .= '<span>' . h($album->nom);
-        $html .= $album->visibilite === 'prive'
+        $html .= $album->visibilite === VisibiliteAlbum::Prive
             ? ' <span class="ml-2 text-xs uppercase tracking-titre text-gris">privé</span>'
             : '';
         $html .= '</span><span class="flex gap-3 text-sm">';

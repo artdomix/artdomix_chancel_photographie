@@ -14,7 +14,9 @@ $lien = 'block px-4 py-2 text-sm hover:bg-white/5 hover:text-corail';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title><?= h($this->fetch('title') ?: 'Administration') ?> — Chancel</title>
-    <?= $this->Vite->asset('resources/js/admin.js') ?>
+    <?= $this->Assets->base() ?>
+    <?= $this->Assets->admin() ?>
+    <?= $this->fetch('script') ?>
 </head>
 <body class="min-h-screen bg-noir">
 <div class="flex min-h-screen">

@@ -16,7 +16,9 @@
     <?php // Un lien de partage n'a rien à faire dans un moteur de recherche. ?>
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title><?= h($this->fetch('title') ?: 'Sélection') ?> — Chancel Photographie</title>
-    <?= $this->Vite->asset('resources/js/app.js') ?>
+    <?= $this->Assets->base() ?>
+    <?= $this->Assets->front() ?>
+    <?= $this->fetch('script') ?>
 </head>
 <body class="flex min-h-screen flex-col">
     <header class="border-b border-white/10">

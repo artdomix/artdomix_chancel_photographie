@@ -16,15 +16,14 @@ Réécriture complète du site précédent (CakePHP 3.9, figé en 2021). Voir
 | Base de données | MySQL / MariaDB, InnoDB, `utf8mb4_unicode_ci` |
 | CSS | Tailwind 4 (configuration CSS-first, pas de `tailwind.config.js`) |
 | Interactivité | HTMX 2 |
-| Animation | GSAP 3.15 (ScrollTrigger, Flip, SplitText) |
-| Build | Vite 7 |
+| Animation | GSAP 3.15 (ScrollTrigger, Flip) |
+| Build | aucun — bibliothèques par CDN |
 | Carte | Leaflet + OpenStreetMap |
 
 ## Installation
 
 ```bash
 composer install
-npm install
 
 cp config/app_local.example.php config/app_local.php
 # renseigner Datasources + Security.salt
@@ -32,7 +31,6 @@ cp config/app_local.example.php config/app_local.php
 mysql -e "CREATE DATABASE chancel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -e "CREATE DATABASE chancel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-npm run build                          # OBLIGATOIRE : sans lui, aucune page n'a de style
 bin/cake migrations migrate
 bin/cake migrations migrate -p Captcha
 bin/cake seeds run ComptesSeed         # comptes d'accès (admin + membre)
@@ -61,6 +59,36 @@ la première connexion : à changer dès la mise en ligne, depuis
 (`admin@chancel.test` / `admin-demo-2026` et `client@chancel.test` /
 `client-demo-2026`) — **à supprimer avant toute mise en ligne**.
 
+## Assets : pas de build, tout vient d'un CDN
+
+Le projet **n'a ni `package.json`, ni bundler, ni étape de compilation** :
+l'hébergement cible n'a pas Node, et un déploiement doit se réduire à un
+`git pull`. Concrètement :
+
+- Tailwind, HTMX, GSAP, Leaflet et les polices sont chargés depuis
+  `cdn.jsdelivr.net` en **versions épinglées**, déclarées à un seul endroit :
+  [`src/View/Helper/AssetsHelper.php`](src/View/Helper/AssetsHelper.php).
+  Monter une version se fait là, et nulle part ailleurs.
+- Le code du site vit dans `webroot/js/*.js` et `webroot/css/*.css`. Ce sont des
+  **sources** : les modifier suffit, il n'y a rien à recompiler. Le JS est écrit
+  en script classique (pas de `import` / `export`, les bibliothèques sont des
+  globales).
+- Tailwind est compilé **dans le navigateur**. `webroot/css/chancel-theme.css`
+  est injecté dans un `<style type="text/tailwindcss">` ; `chancel-repli.css`
+  est du CSS ordinaire chargé avant, qui tient la page pendant la compilation.
+
+Ce que cela coûte, et qu'il faut accepter en connaissance de cause :
+
+| Conséquence | Détail |
+|---|---|
+| Compilation à chaque page | Tailwind recompile côté client à chaque chargement — quelques dizaines de ms et un très bref instant sans mise en page. `chancel-repli.css` évite la page blanche, pas le décalage. |
+| Dépendance au CDN | Si jsDelivr est injoignable, le site reste lisible et navigable mais perd sa mise en page et ses animations. |
+| Adresse IP transmise à un tiers | Les polices passent par Fontsource sur jsDelivr plutôt que par Google Fonts, ce qui évite le point précis relevé par la CNIL, mais reste un appel externe. |
+
+Si ces compromis deviennent gênants, l'alternative connue est de recompiler une
+feuille Tailwind figée et de la committer : cela supprime la compilation
+navigateur, au prix du retour de Node dans la chaîne de développement.
+
 ## Vérifications
 
 ```bash
@@ -82,17 +110,13 @@ déploiement consiste donc à envoyer un projet déjà construit.
 
 ```bash
 composer install --no-dev --optimize-autoloader
-npm run build
 ```
 
-`webroot/build/` est **volontairement versionné** — c'est l'exception au réflexe
-« ne pas committer les artefacts de build ». Toute modification dans
-`resources/` doit être suivie d'un `npm run build` et du commit du résultat,
-faute de quoi la production sert d'anciens assets.
+C'est tout : il n'y a pas d'étape de build (voir « Assets » plus haut).
 
 ### 2. Envoyer
 
-À transférer : tout le projet **sauf** `node_modules/`, `tests/`, `.git/`.
+À transférer : tout le projet **sauf** `tests/` et `.git/`.
 À créer sur le serveur, en écriture pour PHP : `tmp/`, `logs/`,
 `webroot/media/photos/`, `storage/originaux/`.
 
@@ -136,7 +160,8 @@ bin/cake console
 ```php
 $users = \Cake\ORM\TableRegistry::getTableLocator()->get('Users');
 $u = $users->newEntity(['email' => 'vous@exemple.fr', 'password' => 'phrase de passe longue']);
-$u->role = 'admin';   // `role` n'est pas assignable en masse, volontairement
+// `role` n'est pas assignable en masse, volontairement — et il est typé par un enum.
+$u->role = \App\Model\Enum\Role::Admin;
 $users->saveOrFail($u);
 ```
 
@@ -154,6 +179,8 @@ $users->saveOrFail($u);
 - [ ] AVIF vérifié : `php -r 'var_dump(function_exists("imageavif"));'` — s'il
       manque, le site retombe seul sur WebP et JPEG, rien à modifier
 - [ ] `/sitemap.xml` et `/robots.txt` répondent sur le domaine de production
+- [ ] page d'accueil ouverte une fois **sans cache** : les appels à
+      `cdn.jsdelivr.net` doivent tous répondre 200 (styles et animations)
 
 ## Dépannage
 
@@ -191,14 +218,17 @@ détermine les URL absolues (plan de site, e-mails, liens de partage).
 
 ## Points non vérifiables hors production
 
-Quatre éléments n'ont pas pu être testés pendant le développement et sont à
+Cinq éléments n'ont pas pu être testés pendant le développement et sont à
 contrôler au premier déploiement :
 
 1. la version exacte de MySQL de l'hébergeur (le code s'en tient au
    dénominateur commun MySQL 5.7 / 8 / MariaDB) ;
 2. la présence de l'AVIF dans le GD du serveur ;
 3. la réécriture d'URL Apache et la redirection HTTPS ;
-4. l'envoi SMTP réel.
+4. l'envoi SMTP réel ;
+5. le chargement effectif des assets CDN — l'environnement de développement
+   n'avait pas d'accès sortant vers `cdn.jsdelivr.net`, les URL ont donc été
+   construites d'après les paquets npm officiels mais jamais appelées.
 
 ## Licence
 

@@ -14,7 +14,7 @@ use Cake\ORM\Entity;
  * @property string|null $description
  * @property int|null $typevideo_id
  * @property int|null $photo_id
- * @property string $plateforme
+ * @property \App\Model\Enum\Plateforme $plateforme
  * @property string $video_ref
  * @property int|null $duree
  * @property bool $actif

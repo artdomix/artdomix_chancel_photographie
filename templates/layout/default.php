@@ -22,7 +22,8 @@ $description = $this->fetch('meta_description')
     <?php // Canonique : evite que /portfolio/japon et /portfolio/voyage/japon soient vus comme deux pages distinctes. ?>
     <link rel="canonical" href="<?= h($this->Url->build($this->getRequest()->getPath(), ['fullBase' => true])) ?>">
 
-    <?= $this->Vite->asset('resources/js/app.js') ?>
+    <?= $this->Assets->base() ?>
+    <?= $this->Assets->front() ?>
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
@@ -51,6 +52,10 @@ $description = $this->fetch('meta_description')
                  aria-label="Navigation principale">
                 <ul class="flex flex-col gap-4 font-display text-sm tracking-titre uppercase md:flex-row md:gap-8">
                     <li><a class="lien-souligne" href="<?= $this->Url->build('/portfolio') ?>">Portfolio</a></li>
+                    <li><a class="lien-souligne" href="<?= $this->Url->build('/tirages') ?>">Tirages</a></li>
+                    <li><a class="lien-souligne" href="<?= $this->Url->build('/livres') ?>">Livres</a></li>
+                    <li><a class="lien-souligne" href="<?= $this->Url->build('/expositions') ?>">Expositions</a></li>
+                    <li><a class="lien-souligne" href="<?= $this->Url->build('/videos') ?>">Vidéos</a></li>
                     <li><a class="lien-souligne" href="<?= $this->Url->build('/carte') ?>">Carte</a></li>
                     <li><a class="lien-souligne" href="<?= $this->Url->build('/blog') ?>">Blog</a></li>
                     <li><a class="lien-souligne" href="<?= $this->Url->build('/contact') ?>">Contact</a></li>

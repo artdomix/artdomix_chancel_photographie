@@ -24,7 +24,6 @@
 use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\RouteBuilder;
 
-use Cake\Http\Middleware\CsrfProtectionMiddleware;
 /*
  * This file is loaded in the context of the `Application` class.
  * So you can use `$this` to reference the application class instance
@@ -68,10 +67,11 @@ return function (RouteBuilder $routes): void {
 
     $routes->scope('/', function (RouteBuilder $builder): void {
         $builder->connect('/', ['controller' => 'Pages', 'action' => 'accueil']);
-$builder->registerMiddleware('csrf', new CsrfProtectionMiddleware([
-            'httponly' => true,
-            'field' => '_csrfToken',
-        ]));
+
+        // Pas de CsrfProtectionMiddleware ici : il est déjà monté globalement
+        // dans Application::middleware(). `registerMiddleware()` ne fait
+        // qu'enregistrer sous un nom — sans `applyMiddleware()` il reste inerte,
+        // et l'appliquer en plus du global ferait valider le jeton deux fois.
         /*
          * Comptes. `/admin` mène au tableau de bord, et le middleware redirige
          * ici tant que le visiteur n'est pas connecté : l'URL que le photographe
@@ -108,6 +108,19 @@ $builder->registerMiddleware('csrf', new CsrfProtectionMiddleware([
         $builder->connect('/blog', ['controller' => 'Articles', 'action' => 'index']);
         $builder->connect('/blog/*', ['controller' => 'Articles', 'action' => 'voir']);
         $builder->connect('/contact', ['controller' => 'Messages', 'action' => 'contact']);
+
+        /*
+         * Rubriques éditoriales reprises de l'ancien site. Les URL sont écrites
+         * en toutes lettres plutôt que laissées au fallback : `/videos` doit
+         * rester `/videos`, et non `/editorial/videos`.
+         */
+        $builder->connect('/livres', ['controller' => 'Editorial', 'action' => 'livres']);
+        $builder->connect('/livres/*', ['controller' => 'Editorial', 'action' => 'livre']);
+        $builder->connect('/tirages', ['controller' => 'Editorial', 'action' => 'tirages']);
+        $builder->connect('/expositions', ['controller' => 'Editorial', 'action' => 'expositions']);
+        $builder->connect('/expositions/*', ['controller' => 'Editorial', 'action' => 'exposition']);
+        $builder->connect('/videos', ['controller' => 'Editorial', 'action' => 'videos']);
+        $builder->connect('/videos/*', ['controller' => 'Editorial', 'action' => 'video']);
 
         /*
          * Référencement. Générés à la demande : le volume reste modeste et un

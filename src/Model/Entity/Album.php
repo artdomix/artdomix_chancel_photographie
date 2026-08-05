@@ -16,7 +16,7 @@ use Cake\ORM\Entity;
  * @property int|null $lft
  * @property int|null $rght
  * @property int|null $cover_photo_id
- * @property string $visibilite
+ * @property \App\Model\Enum\VisibiliteAlbum $visibilite
  * @property int $ordre
  * @property bool $actif
  * @property \Cake\I18n\DateTime $created

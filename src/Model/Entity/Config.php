@@ -12,7 +12,7 @@ use Cake\ORM\Entity;
  * @property string $cle
  * @property string|null $valeur
  * @property string|null $libelle
- * @property string $type
+ * @property \App\Model\Enum\TypeConfig $type
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime|null $modified
  */

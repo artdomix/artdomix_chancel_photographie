@@ -4,6 +4,11 @@
  * @var array $points
  * @var int $nbPoints
  */
+
+// Leaflet n'est chargé que sur cette page : les 150 Ko de la bibliothèque n'ont
+// rien à faire sur les autres. Le bloc « script » est rendu après `front()`,
+// donc `window.L` existe avant l'exécution différée de chancel.js.
+$this->append('script', $this->Assets->carte());
 ?>
 <?= $this->Seo->partage(['titre' => 'Carte — Chancel Photographie']) ?>
 

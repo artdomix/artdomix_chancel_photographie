@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -22,9 +23,51 @@ class FrontPublicTest extends TestCase
      */
     public function testPagesPubliquesRepondent(): void
     {
-        foreach (['/', '/portfolio', '/recherche', '/carte', '/blog', '/contact'] as $url) {
+        $urls = [
+            '/', '/portfolio', '/recherche', '/carte', '/blog', '/contact',
+            // Rubriques éditoriales : leurs URL sont déclarées à la main dans
+            // routes.php, une faute de frappe ne se verrait qu'ici.
+            '/livres', '/tirages', '/expositions', '/videos',
+            '/sitemap.xml', '/robots.txt', '/rss',
+        ];
+
+        foreach ($urls as $url) {
             $this->get($url);
             $this->assertResponseOk(sprintf('La page %s devrait répondre.', $url));
+        }
+    }
+
+    /**
+     * Les fiches éditoriales, sur des enregistrements créés pour l'occasion :
+     * les listes répondent même vides, pas les fiches.
+     *
+     * @return void
+     */
+    public function testFichesEditorialesRepondent(): void
+    {
+        $slug = 'fiche-de-test-editorial';
+        $cibles = [
+            'Livres' => ['titre' => 'Fiche de test', 'slug' => $slug, 'actif' => true],
+            'Expositions' => ['titre' => 'Fiche de test', 'slug' => $slug, 'actif' => true],
+            'Videos' => [
+                'titre' => 'Fiche de test',
+                'slug' => $slug,
+                'actif' => true,
+                'plateforme' => 'youtube',
+                'video_ref' => 'aqz-KE-bpKQ',
+            ],
+        ];
+
+        foreach ($cibles as $nom => $donnees) {
+            $table = TableRegistry::getTableLocator()->get($nom);
+            $table->deleteAll(['slug' => $slug]);
+            $table->saveOrFail($table->newEntity($donnees));
+
+            $url = '/' . strtolower($nom) . '/' . $slug;
+            $this->get($url);
+            $this->assertResponseOk(sprintf('La fiche %s devrait répondre.', $url));
+
+            $table->deleteAll(['slug' => $slug]);
         }
     }
 

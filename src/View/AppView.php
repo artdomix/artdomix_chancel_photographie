@@ -37,9 +37,36 @@ class AppView extends View
      */
     public function initialize(): void
     {
-        $this->addHelper('Vite');
+        $this->addHelper('Assets');
         $this->addHelper('Photo');
         $this->addHelper('Seo');
         $this->addHelper('Captcha.Captcha');
+    }
+
+    /**
+     * Reporte le titre posé par le contrôleur dans le bloc `title`.
+     *
+     * Les contrôleurs écrivent `$this->set('title', …)`, qui crée une variable de
+     * vue — pas le bloc que les layouts lisent avec `fetch('title')`. Sans ce
+     * report, CakePHP remplit le bloc lui-même avec le chemin du template
+     * humanisé et chaque page sort avec un `<title>` du genre « Pages » ou
+     * « Portfolio ».
+     *
+     * Le report a lieu avant le rendu du template : un template qui assigne
+     * lui-même le bloc reste prioritaire.
+     *
+     * @param string|null $template Template à rendre.
+     * @param string|false|null $layout Layout à utiliser.
+     * @return string
+     */
+    public function render(?string $template = null, string|false|null $layout = null): string
+    {
+        $titre = $this->get('title');
+
+        if ($this->fetch('title') === '' && is_string($titre) && $titre !== '') {
+            $this->assign('title', $titre);
+        }
+
+        return parent::render($template, $layout);
     }
 }

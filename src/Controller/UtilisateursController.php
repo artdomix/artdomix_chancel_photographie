@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Model\Entity\User;
+use App\Model\Enum\Role;
 use App\Model\Table\UsersTable;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
@@ -167,12 +168,12 @@ class UtilisateursController extends AppController
     }
 
     /**
-     * @param string $role Rôle de l'utilisateur connecté.
+     * @param \App\Model\Enum\Role $role Rôle de l'utilisateur connecté.
      * @return array<string, mixed>
      */
-    protected function accueilSelonRole(string $role): array
+    protected function accueilSelonRole(Role $role): array
     {
-        return $role === 'admin'
+        return $role === Role::Admin
             ? ['prefix' => 'Admin', 'controller' => 'Tableau', 'action' => 'index']
             : ['prefix' => 'Membre', 'controller' => 'Tableau', 'action' => 'index'];
     }

@@ -95,8 +95,11 @@ class MoodboardsControllerTest extends TestCase
 
         $this->assertResponseOk();
         $this->assertResponseContains('Sélection protégée');
-        // Le contenu ne doit pas être servi en même temps que le formulaire.
-        $this->assertResponseNotContains('data-moodboard-item');
+        // Le contenu ne doit pas être servi en même temps que le formulaire. On
+        // vise le conteneur plutôt que `data-moodboard-item` seul : ce sélecteur
+        // figure aussi dans la feuille Tailwind injectée dans chaque page, et
+        // l'assertion passerait alors pour une mauvaise raison.
+        $this->assertResponseNotContains('<div data-moodboard ');
     }
 
     /**

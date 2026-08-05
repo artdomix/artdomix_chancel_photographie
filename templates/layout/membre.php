@@ -14,7 +14,9 @@ $identite = $this->getRequest()->getAttribute('identity');
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title><?= h($this->fetch('title') ?: 'Mon espace') ?> — Chancel Photographie</title>
-    <?= $this->Vite->asset('resources/js/app.js') ?>
+    <?= $this->Assets->base() ?>
+    <?= $this->Assets->front() ?>
+    <?= $this->fetch('script') ?>
 </head>
 <body class="flex min-h-screen flex-col">
     <header class="border-b border-white/10">

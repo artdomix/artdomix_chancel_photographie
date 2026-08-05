@@ -11,7 +11,7 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property string $nom
  * @property string $slug
- * @property string $type
+ * @property \App\Model\Enum\TypeTag $type
  * @property string|null $description
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime|null $modified

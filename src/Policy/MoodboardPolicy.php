@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Policy;
 
 use App\Model\Entity\Moodboard;
+use App\Model\Enum\Role;
+use App\Model\Enum\Visibilite;
 use Authorization\IdentityInterface;
 
 /**
@@ -28,7 +30,7 @@ class MoodboardPolicy
             return true;
         }
 
-        if ($moodboard->visibilite === 'public') {
+        if ($moodboard->visibilite === Visibilite::Public) {
             return true;
         }
 
@@ -84,6 +86,6 @@ class MoodboardPolicy
      */
     protected function estAdmin(IdentityInterface $identite): bool
     {
-        return $identite->getOriginalData()->get('role') === 'admin';
+        return $identite->getOriginalData()->get('role') === Role::Admin;
     }
 }

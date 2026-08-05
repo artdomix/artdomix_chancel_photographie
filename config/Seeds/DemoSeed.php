@@ -25,9 +25,11 @@ class DemoSeed extends BaseSeed
         $maintenant = date('Y-m-d H:i:s');
         $hasher = new DefaultPasswordHasher();
 
+        $this->nettoyer();
+
         $this->table('users')->insert([
             [
-                'id' => 1,
+                'id' => 901,
                 'email' => 'admin@chancel.test',
                 'password' => $hasher->hash('admin-demo-2026'),
                 'role' => 'admin',
@@ -38,7 +40,7 @@ class DemoSeed extends BaseSeed
                 'modified' => $maintenant,
             ],
             [
-                'id' => 2,
+                'id' => 902,
                 'email' => 'client@chancel.test',
                 'password' => $hasher->hash('client-demo-2026'),
                 'role' => 'member',
@@ -179,7 +181,7 @@ class DemoSeed extends BaseSeed
                 'chapeau' => 'Kyoto sous la pluie, Tokyo de nuit, et beaucoup de marche.',
                 'contenu' => '<p>Le récit détaillé arrive bientôt.</p>',
                 'photo_id' => 3,
-                'auteur_id' => 1,
+                'auteur_id' => 901,
                 'publie_le' => $maintenant,
                 'actif' => true,
                 'created' => $maintenant,
@@ -187,8 +189,204 @@ class DemoSeed extends BaseSeed
             ],
         ])->save();
 
+        $this->insererEditorial($maintenant);
         $this->insererMoodboards($maintenant, $hasher);
         $this->insererGalerie($maintenant, $hasher);
+    }
+
+    /**
+     * Vide les tables que ce seed alimente, avant de les remplir.
+     *
+     * Le seed pose des identifiants explicites — les clés étrangères entre les
+     * lignes de démonstration en dépendent — et se relancerait donc en violation
+     * de clé primaire. Le nettoyage le rend rejouable, et surtout indépendant de
+     * l'ordre : `ComptesSeed` peut passer avant ou après.
+     *
+     * Les deux comptes de démonstration sont supprimés par leur adresse, jamais
+     * par leur identifiant : effacer toute la table `users` emporterait les
+     * comptes réels créés par `ComptesSeed`.
+     *
+     * @return void
+     */
+    protected function nettoyer(): void
+    {
+        $connexion = $this->getAdapter()->getConnection();
+
+        // Ordre inverse des dépendances : chaque table est vidée avant celles
+        // dont elle dépend, pour ne pas buter sur une contrainte.
+        $tables = [
+            'galeries_photos', 'galerie_favoris', 'galerie_commentaires', 'galeries',
+            'moodboards_photos', 'moodboard_commentaires', 'moodboards',
+            'commentaires', 'articles',
+            'tirages', 'typetirages', 'videos', 'typevideos', 'livres', 'expositions',
+            'photos_tags', 'albums_photos', 'exifs', 'photos', 'albums', 'tags',
+            'messages', 'demandes', 'config',
+        ];
+
+        foreach ($tables as $table) {
+            $connexion->deleteQuery($table)->execute();
+        }
+
+        $connexion->deleteQuery('users')
+            ->where(['email IN' => ['admin@chancel.test', 'client@chancel.test']])
+            ->execute();
+    }
+
+    /**
+     * Rubriques éditoriales : livres, tirages, expositions, vidéos.
+     *
+     * Sans ces lignes, `/livres`, `/tirages`, `/expositions` et `/videos`
+     * s'affichent vides et leurs fiches de détail ne sont jamais exercées — ni à
+     * l'œil, ni par les tests.
+     *
+     * @param string $maintenant Horodatage commun aux lignes insérées.
+     * @return void
+     */
+    protected function insererEditorial(string $maintenant): void
+    {
+        $this->table('typetirages')->insert([
+            [
+                'id' => 1,
+                'nom' => 'Tirage argentique baryté',
+                'slug' => 'argentique-baryte',
+                'description' => 'Tirage en chambre noire sur papier baryté, viré au sélénium.',
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+            [
+                'id' => 2,
+                'nom' => 'Tirage pigmentaire',
+                'slug' => 'pigmentaire',
+                'description' => 'Encres pigmentaires sur papier coton, sans acide.',
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+        ])->save();
+
+        $this->table('typevideos')->insert([
+            ['id' => 1, 'nom' => 'Making-of', 'slug' => 'making-of', 'created' => $maintenant, 'modified' => $maintenant],
+            ['id' => 2, 'nom' => 'Film court', 'slug' => 'film-court', 'created' => $maintenant, 'modified' => $maintenant],
+        ])->save();
+
+        $this->table('livres')->insert([
+            [
+                'id' => 1,
+                'titre' => 'Routes du Nord',
+                'slug' => 'routes-du-nord',
+                'description' => "Quarante photographies prises entre la Baltique et les Lofoten, "
+                    . 'sur trois hivers.',
+                'photo_id' => 3,
+                'prix' => 45.00,
+                'lien_achat' => 'https://example.org/routes-du-nord',
+                'date_parution' => '2025-10-15',
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+            [
+                // Volontairement sans date de parution : vérifie l'affichage
+                // « À paraître » et le tri des livres sans date.
+                'id' => 2,
+                'titre' => 'Ateliers',
+                'slug' => 'ateliers',
+                'description' => 'Portraits d\'artisans dans leur atelier. En préparation.',
+                'photo_id' => 1,
+                'prix' => null,
+                'lien_achat' => null,
+                'date_parution' => null,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+        ])->save();
+
+        $this->table('tirages')->insert([
+            [
+                'id' => 1,
+                'photo_id' => 1,
+                'typetirage_id' => 1,
+                'format' => '30 × 40 cm',
+                'papier' => 'Ilford Multigrade FB',
+                'prix' => 220.00,
+                'tirage_limite' => 15,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+            [
+                'id' => 2,
+                'photo_id' => 3,
+                'typetirage_id' => 2,
+                'format' => '50 × 70 cm',
+                'papier' => 'Hahnemühle Photo Rag 308 g',
+                'prix' => 390.00,
+                'tirage_limite' => 8,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+        ])->save();
+
+        $this->table('expositions')->insert([
+            [
+                // Sans date de fin : couvre le cas « date unique » de l'affichage.
+                'id' => 1,
+                'titre' => 'Nuits blanches',
+                'slug' => 'nuits-blanches',
+                'description' => 'Une sélection de nocturnes urbains, en grand format.',
+                'lieu' => 'Galerie du Passage, Melun',
+                'photo_id' => 2,
+                'date_debut' => date('Y-m-d', strtotime('+30 days')),
+                'date_fin' => null,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+            [
+                'id' => 2,
+                'titre' => 'Congo, carnets',
+                'slug' => 'congo-carnets',
+                'description' => 'Reportage présenté avec les carnets de terrain.',
+                'lieu' => 'Médiathèque de Fontainebleau',
+                'photo_id' => 4,
+                'date_debut' => date('Y-m-d', strtotime('-1 year')),
+                'date_fin' => date('Y-m-d', strtotime('-10 months')),
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+        ])->save();
+
+        $this->table('videos')->insert([
+            [
+                'id' => 1,
+                'titre' => 'Dans la chambre noire',
+                'slug' => 'dans-la-chambre-noire',
+                'description' => 'Le tirage baryté, de la pesée des bains au séchage.',
+                'typevideo_id' => 1,
+                'photo_id' => 5,
+                'plateforme' => 'youtube',
+                'video_ref' => 'aqz-KE-bpKQ',
+                'duree' => 480,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+            [
+                'id' => 2,
+                'titre' => 'Lofoten, hiver',
+                'slug' => 'lofoten-hiver',
+                'description' => 'Six minutes de repérages, sans commentaire.',
+                'typevideo_id' => 2,
+                'photo_id' => 3,
+                'plateforme' => 'vimeo',
+                'video_ref' => '76979871',
+                'duree' => 372,
+                'actif' => true,
+                'created' => $maintenant,
+                'modified' => $maintenant,
+            ],
+        ])->save();
     }
 
     /**
@@ -345,7 +543,7 @@ class DemoSeed extends BaseSeed
                 'theme' => 'mosaique-flip',
                 'visibilite' => 'lien',
                 'share_token' => 'demo-lien-mariage-automne-2026',
-                'user_id' => 1,
+                'user_id' => 901,
                 'created' => $maintenant,
                 'modified' => $maintenant,
             ],
@@ -358,8 +556,8 @@ class DemoSeed extends BaseSeed
                 'share_token' => 'demo-prive-selection-client-2026',
                 // Mot de passe de démonstration : « moodboard-demo ».
                 'password_hash' => $hasher->hash('moodboard-demo'),
-                'user_id' => 1,
-                'destinataire_id' => 2,
+                'user_id' => 901,
+                'destinataire_id' => 902,
                 'created' => $maintenant,
                 'modified' => $maintenant,
             ],
@@ -393,7 +591,7 @@ class DemoSeed extends BaseSeed
                 'nom' => 'Shooting Studio Durand — mars 2026',
                 'slug' => 'shooting-studio-durand-mars-2026',
                 'description' => 'Sélectionnez vos 3 photos préférées.',
-                'client_id' => 2,
+                'client_id' => 902,
                 'share_token' => 'demo-galerie-studio-durand-2026',
                 // Mot de passe de démonstration : « galerie-demo ».
                 'password_hash' => $hasher->hash('galerie-demo'),

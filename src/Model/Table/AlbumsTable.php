@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\VisibiliteAlbum;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -47,6 +49,11 @@ class AlbumsTable extends Table
         $this->setTable('albums');
         $this->setDisplayField('nom');
         $this->setPrimaryKey('id');
+
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('visibilite', EnumType::from(VisibiliteAlbum::class));
 
         $this->addBehavior('Timestamp');
         $this->addBehavior('Sluggable', ['field' => 'nom']);
@@ -106,8 +113,11 @@ class AlbumsTable extends Table
             ->integer('cover_photo_id')
             ->allowEmptyString('cover_photo_id');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par VisibiliteAlbum,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('visibilite')
+            ->enum('visibilite', VisibiliteAlbum::class)
             ->notEmptyString('visibilite');
 
         $validator

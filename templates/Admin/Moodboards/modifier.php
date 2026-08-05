@@ -2,7 +2,8 @@
 /**
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Moodboard $moodboard
- * @var array $themes
+ * @var array<string, string> $themes
+ * @var array<string, string> $visibilites
  * @var array $membres
  */
 
@@ -17,7 +18,7 @@ $label = ['class' => 'mb-2 block text-sm text-gris'];
     <?= $this->Form->control('theme', ['type' => 'select', 'options' => $themes, 'label' => ['text' => 'Thème d\'animation'] + $label, 'class' => $champ]) ?>
     <?= $this->Form->control('visibilite', [
         'type' => 'select',
-        'options' => ['public' => 'Public (listé)', 'lien' => 'Accessible par lien', 'prive' => 'Privé (mot de passe)'],
+        'options' => $visibilites,
         'label' => $label,
         'class' => $champ,
     ]) ?>

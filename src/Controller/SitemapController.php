@@ -45,8 +45,29 @@ class SitemapController extends AppController
             ['loc' => '/portfolio', 'priority' => '0.9', 'changefreq' => 'weekly'],
             ['loc' => '/carte', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['loc' => '/blog', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['loc' => '/tirages', 'priority' => '0.7', 'changefreq' => 'monthly'],
+            ['loc' => '/livres', 'priority' => '0.6', 'changefreq' => 'monthly'],
+            ['loc' => '/expositions', 'priority' => '0.6', 'changefreq' => 'monthly'],
+            ['loc' => '/videos', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['loc' => '/contact', 'priority' => '0.4', 'changefreq' => 'yearly'],
         ];
+
+        // Fiches éditoriales. Le préfixe d'URL est la seule chose qui change
+        // d'une rubrique à l'autre, d'où la boucle plutôt que trois blocs.
+        foreach (['livres' => 'Livres', 'expositions' => 'Expositions', 'videos' => 'Videos'] as $prefixe => $table) {
+            $entites = $this->fetchTable($table)->find()
+                ->where([$this->fetchTable($table)->aliasField('actif') => true])
+                ->all();
+
+            foreach ($entites as $entite) {
+                $urls[] = [
+                    'loc' => '/' . $prefixe . '/' . $entite->slug,
+                    'lastmod' => $entite->modified?->format('Y-m-d'),
+                    'priority' => '0.5',
+                    'changefreq' => 'monthly',
+                ];
+            }
+        }
 
         foreach ($this->fetchTable('Albums')->find('publics')->all() as $album) {
             $urls[] = [

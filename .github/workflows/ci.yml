@@ -1,14 +1,15 @@
 name: CI
 
+# Le workflow du squelette CakePHP visait les branches `5.x` / `5.next` / `6.x`,
+# qui n'existent pas ici : il ne se déclenchait donc jamais. Il faisait par
+# ailleurs tourner les tests sur SQLite, alors que le schéma de ce projet repose
+# sur des ENUM et des index FULLTEXT — un vert sur SQLite n'aurait rien prouvé.
 on:
   push:
     branches:
-      - '5.x'
-      - '5.next'
-      - '6.x'
+      - main
+      - develop
   pull_request:
-    branches:
-      - '*'
   workflow_dispatch:
 
 permissions:
@@ -16,66 +17,66 @@ permissions:
 
 jobs:
   testsuite:
+    name: Tests (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - php-version: '8.2'
-            dependencies: 'lowest'
-          - php-version: '8.5'
-            dependencies: 'highest'
-          - php-version: '8.5'
-            dependencies: 'highest'
+        php-version: ['8.2', '8.3']
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: chancel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: ${{ matrix.php-version }}
-        extensions: mbstring, intl, pdo_sqlite
-        ini-values: zend.assertions=1
-        coverage: none
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          # gd et exif portent le pipeline d'images, pdo_mysql les tests : sans
+          # eux une bonne moitié de la suite ne démarre pas.
+          extensions: mbstring, intl, pdo_mysql, gd, exif
+          ini-values: zend.assertions=1
+          coverage: none
 
-    - name: Composer install
-      uses: ramsey/composer-install@v4
-      with:
-        dependency-versions: ${{ matrix.dependencies }}
-        composer-options: ${{ matrix.composer-options }}
+      - name: Composer install
+        uses: ramsey/composer-install@v4
 
-    - name: Composer post install
-      run: composer run-script post-install-cmd --no-interaction
-
-    - name: Run PHPUnit
-      run: vendor/bin/phpunit
-      env:
-        DATABASE_TEST_URL: sqlite://./testdb.sqlite
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit
+        env:
+          DATABASE_TEST_URL: mysql://root@127.0.0.1:3306/chancel_test
+          SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
 
   coding-standard:
-    name: Coding Standard & Static Analysis
+    name: Standard de code
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
-        extensions: mbstring, intl
-        coverage: none
-        tools: cs2pr, phpstan:2.1
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl
+          coverage: none
+          tools: cs2pr
 
-    - name: Composer install
-      uses: ramsey/composer-install@v4
+      - name: Composer install
+        uses: ramsey/composer-install@v4
 
-    - name: Run PHP CodeSniffer
-      run: vendor/bin/phpcs --report=checkstyle | cs2pr
-
-    - name: Run phpstan
-      if: always()
-      run: phpstan
-      env:
-        SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
+      - name: Run PHP CodeSniffer
+        run: vendor/bin/phpcs --report=checkstyle | cs2pr

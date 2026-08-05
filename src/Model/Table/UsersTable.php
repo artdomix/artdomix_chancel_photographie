@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\Role;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -47,6 +49,11 @@ class UsersTable extends Table
         $this->setDisplayField('email');
         $this->setPrimaryKey('id');
 
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('role', EnumType::from(Role::class));
+
         $this->addBehavior('Timestamp');
 
         $this->hasMany('Commentaires', [
@@ -86,8 +93,11 @@ class UsersTable extends Table
             ->requirePresence('password', 'create')
             ->notEmptyString('password');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par Role,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('role')
+            ->enum('role', Role::class)
             ->notEmptyString('role');
 
         $validator

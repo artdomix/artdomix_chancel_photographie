@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\TypeTag;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -42,6 +44,11 @@ class TagsTable extends Table
         $this->setDisplayField('nom');
         $this->setPrimaryKey('id');
 
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('type', EnumType::from(TypeTag::class));
+
         $this->addBehavior('Timestamp');
         $this->addBehavior('Sluggable', ['field' => 'nom']);
 
@@ -72,8 +79,11 @@ class TagsTable extends Table
             ->allowEmptyString('slug')
             ->add('slug', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par TypeTag,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('type')
+            ->enum('type', TypeTag::class)
             ->notEmptyString('type');
 
         $validator

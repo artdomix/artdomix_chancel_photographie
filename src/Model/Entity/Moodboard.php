@@ -12,8 +12,8 @@ use Cake\ORM\Entity;
  * @property string $titre
  * @property string $slug
  * @property string|null $description
- * @property string $theme
- * @property string $visibilite
+ * @property \App\Model\Enum\ThemeMoodboard $theme
+ * @property \App\Model\Enum\Visibilite $visibilite
  * @property string $share_token
  * @property string|null $password_hash
  * @property \Cake\I18n\DateTime|null $expires_at
@@ -54,6 +54,11 @@ class Moodboard extends Entity
         'theme' => true,
         'visibilite' => true,
         'share_token' => true,
+        // `password` est le champ virtuel du formulaire, qui alimente
+        // `password_hash` via PartageableTrait. Sans cette ligne, patchEntity()
+        // écarte silencieusement la saisie et le moodboard reste sans protection
+        // alors que l'admin croit l'avoir posée.
+        'password' => true,
         'password_hash' => false,
         'expires_at' => true,
         'user_id' => true,

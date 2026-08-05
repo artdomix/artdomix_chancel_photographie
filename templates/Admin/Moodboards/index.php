@@ -26,9 +26,9 @@
         <?php foreach ($moodboards as $moodboard) : ?>
             <tr class="border-b border-white/5">
                 <td class="py-2"><?= h($moodboard->titre) ?></td>
-                <td class="py-2 text-gris"><?= h($moodboard->theme) ?></td>
+                <td class="py-2 text-gris"><?= h($moodboard->theme->label()) ?></td>
                 <td class="py-2">
-                    <?= h($moodboard->visibilite) ?>
+                    <?= h($moodboard->visibilite->label()) ?>
                     <?php if ($moodboard->estProtege()) : ?>
                         <span class="ml-1 text-xs text-corail" title="Protégé par mot de passe">🔒</span>
                     <?php endif; ?>

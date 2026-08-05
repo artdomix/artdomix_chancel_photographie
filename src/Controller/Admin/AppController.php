@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Controller\AppController as BaseController;
+use App\Model\Enum\Role;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\ForbiddenException;
 
@@ -42,7 +43,7 @@ class AppController extends BaseController
         }
 
         // Connecté mais sans le rôle : là, c'est bien un refus.
-        if ($identite->getOriginalData()->get('role') !== 'admin') {
+        if ($identite->getOriginalData()->get('role') !== Role::Admin) {
             throw new ForbiddenException(__("Cette zone est réservée à l'administration."));
         }
 

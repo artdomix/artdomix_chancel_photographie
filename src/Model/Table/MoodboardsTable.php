@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\ThemeMoodboard;
+use App\Model\Enum\Visibilite;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -44,6 +47,12 @@ class MoodboardsTable extends Table
         $this->setTable('moodboards');
         $this->setDisplayField('titre');
         $this->setPrimaryKey('id');
+
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('visibilite', EnumType::from(Visibilite::class));
+        $this->getSchema()->setColumnType('theme', EnumType::from(ThemeMoodboard::class));
 
         $this->addBehavior('Timestamp');
         $this->addBehavior('Partageable');
@@ -90,12 +99,18 @@ class MoodboardsTable extends Table
             ->scalar('description')
             ->allowEmptyString('description');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par ThemeMoodboard,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('theme')
+            ->enum('theme', ThemeMoodboard::class)
             ->notEmptyString('theme');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par Visibilite,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('visibilite')
+            ->enum('visibilite', Visibilite::class)
             ->notEmptyString('visibilite');
 
         $validator

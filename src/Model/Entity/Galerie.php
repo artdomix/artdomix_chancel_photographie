@@ -52,6 +52,10 @@ class Galerie extends Entity
         'description' => true,
         'client_id' => true,
         'share_token' => true,
+        // Champ virtuel du formulaire, qui alimente `password_hash` via
+        // PartageableTrait. Sans cette ligne, patchEntity() écarte
+        // silencieusement la saisie et la livraison reste sans protection.
+        'password' => true,
         'password_hash' => false,
         'expires_at' => true,
         'telechargement_actif' => true,

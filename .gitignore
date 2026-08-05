@@ -15,9 +15,10 @@
 /webroot/media/*
 !/webroot/media/.gitkeep
 
-# ATTENTION : webroot/build/ est VOLONTAIREMENT versionné. L'hébergement mutualisé
-# n'a pas Node, `npm run build` tourne en local ou en CI et la sortie est déployée
-# telle quelle. Ne pas l'ignorer.
+# ATTENTION : webroot/css/ et webroot/js/ sont des SOURCES, pas des artefacts de
+# build. Le projet n'a plus d'étape de compilation — les bibliothèques viennent
+# d'un CDN et le code du site est écrit directement dans ces fichiers. Ne pas les
+# ignorer par réflexe « c'est dans webroot ».
 
 # OS generated files #
 ######################
@@ -56,12 +57,3 @@ nbproject/*
 .vscode
 # nova
 .nova
-# Sass preprocessor
-.sass-cache/
-# node
-/node_modules/*
-# vite
-/webroot/hot
-# yarn
-yarn-debug.log
-yarn-error.log

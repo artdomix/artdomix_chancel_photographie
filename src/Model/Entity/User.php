@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Entity;
 
+use App\Model\Enum\Role;
 use Authentication\PasswordHasher\DefaultPasswordHasher;
 use Cake\ORM\Entity;
 
@@ -12,7 +13,7 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property string $email
  * @property string $password
- * @property string $role
+ * @property \App\Model\Enum\Role $role
  * @property string|null $prenom
  * @property string|null $nom
  * @property string|null $societe
@@ -107,6 +108,6 @@ class User extends Entity
      */
     public function estAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === Role::Admin;
     }
 }

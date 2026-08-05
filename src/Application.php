@@ -41,7 +41,6 @@ use Cake\Http\BaseApplication;
 use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
-use Cake\Http\ServerRequest;
 use Cake\ORM\Locator\TableLocator;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Middleware\AssetMiddleware;

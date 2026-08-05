@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\TypeConfig;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -41,6 +43,11 @@ class ConfigTable extends Table
         $this->setDisplayField('cle');
         $this->setPrimaryKey('id');
 
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('type', EnumType::from(TypeConfig::class));
+
         $this->addBehavior('Timestamp');
     }
 
@@ -68,8 +75,11 @@ class ConfigTable extends Table
             ->maxLength('libelle', 190)
             ->allowEmptyString('libelle');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par TypeConfig,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('type')
+            ->enum('type', TypeConfig::class)
             ->notEmptyString('type');
 
         return $validator;

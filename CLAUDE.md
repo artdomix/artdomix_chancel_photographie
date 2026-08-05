@@ -23,8 +23,8 @@ métier, jamais comme modèle de code.
 | Templates | `.php` dans `templates/` |
 | CSS | **Tailwind 4** — configuration CSS-first (`@theme`), il n'y a pas de `tailwind.config.js` |
 | Interactivité | **HTMX 2** (fragments serveur, pas de SPA) |
-| Animation | **GSAP 3.15** — ScrollTrigger, Flip, SplitText, ScrollSmoother (tous gratuits depuis avril 2025) |
-| Build | **Vite 7** — sortie dans `webroot/build/` |
+| Animation | **GSAP 3.15** — ScrollTrigger, Flip (gratuits depuis avril 2025) |
+| Build | **aucun** — bibliothèques par CDN, JS et CSS écrits à la main |
 | Carte | Leaflet + OpenStreetMap (pas de clé API) |
 | Serveur | Apache mutualisé + `mod_rewrite` |
 
@@ -36,13 +36,11 @@ Plugins Composer : `cakephp/authentication`, `cakephp/authorization`,
 
 ```bash
 composer install
-npm install
 cp config/app_local.example.php config/app_local.php   # puis renseigner la BDD + le salt
 
 mysql -e "CREATE DATABASE chancel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -e "CREATE DATABASE chancel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-npm run build          # OBLIGATOIRE : sans lui, aucune page n'a de style
 bin/cake migrations migrate
 bin/cake migrations migrate -p Captcha
 bin/cake seeds run ComptesSeed   # comptes d'accès réels
@@ -58,12 +56,29 @@ touchés.
 Trois contraintes expliquent la plupart des choix de ce dépôt. Les enfreindre casse
 la production.
 
-### 1. L'hébergement est mutualisé et n'a pas Node
+### 1. L'hébergement est mutualisé et n'a pas Node — le projet n'a donc aucun build
 
-`webroot/build/` est **volontairement committé** — c'est l'exception au réflexe « ne pas
-versionner les artefacts de build ». `npm run build` tourne en local ou en CI, jamais
-sur le serveur. **Toute modification dans `resources/` doit être suivie d'un
-`npm run build` et le résultat committé**, sinon la prod sert d'anciens assets.
+Il n'y a **ni `package.json`, ni bundler, ni étape de compilation**. Un `git pull` suffit
+à déployer. Concrètement :
+
+- les bibliothèques (Tailwind, HTMX, GSAP, Leaflet, polices) viennent d'un **CDN**, en
+  **versions épinglées**, listées à un seul endroit : `src/View/Helper/AssetsHelper.php` ;
+- le code du site est écrit directement dans `webroot/js/*.js` et `webroot/css/*.css` —
+  ce sont des **sources**, pas des artefacts : les modifier, c'est modifier le site ;
+- le JS est en **script classique** (IIFE, globales `window.gsap`, `window.htmx`,
+  `window.L`). **Pas de `import` / `export`** : rien ne les résoudrait.
+
+Tailwind est compilé **dans le navigateur** par `@tailwindcss/browser`. Deux
+conséquences à connaître avant de toucher au CSS :
+
+- `webroot/css/chancel-theme.css` n'est pas servi comme feuille de style, son contenu est
+  injecté dans un `<style type="text/tailwindcss">` ; son `@import` ne sait résoudre que
+  les feuilles internes de Tailwind, jamais une URL ;
+- `webroot/css/chancel-repli.css` est du CSS ordinaire, chargé en premier, qui garantit un
+  fond sombre et un texte lisible pendant la compilation et si le CDN ne répond pas.
+
+Coût assumé : une compilation Tailwind à chaque chargement de page, et une dépendance à
+la disponibilité du CDN. C'était le prix demandé pour supprimer Node.
 
 ### 2. La base est MySQL, y compris pour les tests
 
@@ -85,15 +100,15 @@ originaux dans `storage/originaux/` (hors `webroot/`, gitignoré), dérivés dan
 
 ```
 config/            routes.php, migrations/, seeds/, app_local.php (gitignoré)
-resources/css|js/  sources Tailwind + JS — c'est ici qu'on édite le front
 src/
   Controller/            front public
   Controller/Admin/      préfixe admin
   Controller/Membre/     préfixe membre
+  Model/Enum/            enums PHP adossés aux colonnes ENUM
   Service/               traitement d'images, EXIF, tokens de partage
-  View/Helper/           ViteHelper, PhotoHelper, SeoHelper
+  View/Helper/           AssetsHelper (CDN), PhotoHelper, SeoHelper
 templates/         vues .php
-webroot/build/     sortie Vite — COMMITTÉE (cf. contrainte 1)
+webroot/css|js/    SOURCES du front — c'est ici qu'on édite (cf. contrainte 1)
 webroot/media/     dérivés générés — gitignoré
 storage/           originaux — gitignoré
 ```
@@ -143,8 +158,9 @@ Toutes les animations passent par `gsap.matchMedia()` avec une branche
 elle, ils resteraient à l'opacité 0 posée par le CSS. Ne jamais ajouter d'animation
 hors de ce garde-fou.
 
-Le CSS ne masque les éléments `[data-anim]` qu'une fois la classe `js-pret` posée par
-le JS : une page reste lisible si le bundle ne se charge pas.
+Le CSS ne masque les éléments `[data-anim]` et `[data-moodboard-item]` qu'une fois la
+classe `js-pret` posée par le JS, et chaque script vérifie que `window.gsap` existe avant
+de s'en servir : une page reste lisible si le CDN ne répond pas.
 
 ## Conventions du code
 
@@ -161,8 +177,8 @@ le JS : une page reste lisible si le bundle ne se charge pas.
 - **Ne jamais committer `config/app_local.php`** (identifiants BDD, salt) — gitignoré,
   garder cet état.
 - Ne jamais committer d'image, de dump SQL ni d'archive binaire.
-- Après toute modification de `resources/`, relancer `npm run build` et committer
-  `webroot/build/`.
+- Ne pas réintroduire npm, un bundler ou des modules ES : c'est la contrainte 1.
+- Monter une version de bibliothèque = éditer `AssetsHelper::LIBS`, et rien d'autre.
 - Décrire précisément ce qui n'a pas pu être vérifié : la version exacte du MySQL de
-  prod, la présence d'AVIF dans le GD de l'hébergeur, la réécriture Apache et l'envoi
-  SMTP réel ne sont pas testables ici.
+  prod, la présence d'AVIF dans le GD de l'hébergeur, la réécriture Apache, l'envoi
+  SMTP réel et le rendu effectif des assets CDN ne sont pas testables ici.

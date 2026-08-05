@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Policy;
 
 use App\Model\Entity\User;
+use App\Model\Enum\Role;
 use Authorization\IdentityInterface;
 
 /**
@@ -75,7 +76,7 @@ class UserPolicy
      */
     protected function estAdmin(IdentityInterface $identite): bool
     {
-        return $identite->getOriginalData()->get('role') === 'admin';
+        return $identite->getOriginalData()->get('role') === Role::Admin;
     }
 
     /**

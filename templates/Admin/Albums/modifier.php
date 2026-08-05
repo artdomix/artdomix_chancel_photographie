@@ -1,4 +1,7 @@
 <?php
+
+use App\Model\Enum\VisibiliteAlbum;
+
 /**
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Album $album
@@ -13,7 +16,7 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-cor
     <?= $this->Form->control('nom', ['label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
     <?= $this->Form->control('description', ['type' => 'textarea', 'rows' => 3, 'label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
     <?= $this->Form->control('parent_id', ['type' => 'select', 'options' => $parents, 'empty' => '— Racine —', 'label' => ['text' => 'Album parent', 'class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
-    <?= $this->Form->control('visibilite', ['type' => 'select', 'options' => ['public' => 'Public', 'prive' => 'Privé'], 'label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
+    <?= $this->Form->control('visibilite', ['type' => 'select', 'options' => VisibiliteAlbum::options(), 'label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
     <?= $this->Form->control('actif', ['label' => ['text' => 'En ligne', 'class' => 'text-sm text-gris']]) ?>
     <?= $this->Form->button('Enregistrer', ['class' => 'bg-corail px-6 py-2 font-display text-sm uppercase tracking-titre text-noir hover:bg-corail-sombre']) ?>
 <?= $this->Form->end() ?>

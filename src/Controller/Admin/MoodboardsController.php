@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Model\Enum\Role;
+use App\Model\Enum\ThemeMoodboard;
+use App\Model\Enum\Visibilite;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 
@@ -11,16 +14,6 @@ use Cake\Http\Response;
  */
 class MoodboardsController extends AppController
 {
-    /**
-     * Thèmes proposés, alignés sur l'ENUM de la table et sur les modules JS.
-     */
-    protected const THEMES = [
-        'mosaique-flip' => 'Mosaïque animée',
-        'mur-parallaxe' => 'Mur en parallaxe',
-        'carrousel-pinne' => 'Carrousel épinglé',
-        'grille-cinetique' => 'Grille cinétique',
-    ];
-
     /**
      * @return void
      */
@@ -80,9 +73,12 @@ class MoodboardsController extends AppController
         }
 
         $this->set('moodboard', $moodboard);
-        $this->set('themes', self::THEMES);
+        // Listes construites depuis les enums plutôt que recopiées : ajouter un
+        // cas suffit à le faire apparaître dans le formulaire.
+        $this->set('themes', ThemeMoodboard::options());
+        $this->set('visibilites', Visibilite::options());
         $this->set('membres', $this->fetchTable('Users')->find('list', valueField: 'email')
-            ->where(['role' => 'member'])->toArray());
+            ->where(['role' => Role::Membre])->toArray());
         $this->set('title', $id === null ? 'Nouveau moodboard' : 'Modifier un moodboard');
 
         return null;

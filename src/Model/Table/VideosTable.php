@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Enum\Plateforme;
+use Cake\Database\Type\EnumType;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -42,6 +44,11 @@ class VideosTable extends Table
         $this->setTable('videos');
         $this->setDisplayField('titre');
         $this->setPrimaryKey('id');
+
+        // Les colonnes ENUM sont typées vers des enums PHP : l'ORM refuse
+        // désormais une valeur hors liste, là où une chaîne libre aurait été
+        // acceptée puis rejetée silencieusement par MySQL.
+        $this->getSchema()->setColumnType('plateforme', EnumType::from(Plateforme::class));
 
         $this->addBehavior('Timestamp');
         $this->addBehavior('Sluggable', ['field' => 'titre']);
@@ -86,8 +93,11 @@ class VideosTable extends Table
             ->integer('photo_id')
             ->allowEmptyString('photo_id');
 
+        // `enum()` plutôt que `scalar()` : la colonne est typée par Plateforme,
+        // et une valeur hors des cas connus doit être refusée à la validation
+        // plutôt que de remonter en exception au moment de l'écriture.
         $validator
-            ->scalar('plateforme')
+            ->enum('plateforme', Plateforme::class)
             ->notEmptyString('plateforme');
 
         $validator
