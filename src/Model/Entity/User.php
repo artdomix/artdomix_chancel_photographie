@@ -104,6 +104,25 @@ class User extends Entity
     }
 
     /**
+     * Vérifie un mot de passe en clair contre l'empreinte enregistrée.
+     *
+     * Sert au changement de mot de passe depuis l'espace membre, où l'ancien est
+     * redemandé. L'authentification, elle, passe par le plugin Authentication et
+     * n'appelle pas cette méthode.
+     *
+     * @param string $saisi Mot de passe proposé.
+     * @return bool
+     */
+    public function verifierMotDePasse(string $saisi): bool
+    {
+        if ($saisi === '' || !is_string($this->password) || $this->password === '') {
+            return false;
+        }
+
+        return (new DefaultPasswordHasher())->check($saisi, $this->password);
+    }
+
+    /**
      * @return bool
      */
     public function estAdmin(): bool

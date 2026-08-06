@@ -5,11 +5,11 @@ namespace App\Controller;
 
 use App\Model\Entity\Galerie;
 use App\Model\Table\GaleriesTable;
+use App\Service\Galerie\SelectionClient;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 use Cake\Utility\Security;
-use ZipArchive;
 
 /**
  * Galerie client accessible par lien de partage.
@@ -55,8 +55,9 @@ class GaleriesController extends AppController
      * @param string|null $token Jeton de partage.
      * @return \Cake\Http\Response|null
      */
-    public function partage(?string $token = null): ?Response
+    public function partage(?string $token = null, ?SelectionClient $selection = null): ?Response
     {
+        $selection ??= new SelectionClient();
         $galerie = $this->chargerParToken($token);
 
         if ($galerie->estProtege() && !$this->estDeverrouillee($galerie)) {
@@ -68,7 +69,7 @@ class GaleriesController extends AppController
         }
 
         $this->set('galerie', $galerie);
-        $this->set('favoris', $this->favorisDuVisiteur($galerie));
+        $this->set('favoris', $selection->photosRetenues($galerie, $this->identiteVisiteur()));
         $this->set('title', $galerie->nom);
         $this->viewBuilder()->setLayout('partage');
 
@@ -107,63 +108,39 @@ class GaleriesController extends AppController
      * @param string|null $photoId Identifiant de la photo.
      * @return \Cake\Http\Response|null
      */
-    public function favori(?string $token = null, ?string $photoId = null): ?Response
-    {
+    public function favori(
+        ?string $token = null,
+        ?string $photoId = null,
+        ?SelectionClient $selection = null,
+    ): ?Response {
         $this->request->allowMethod('post');
 
+        $selection ??= new SelectionClient();
         $galerie = $this->chargerParToken($token);
 
         if ($galerie->estProtege() && !$this->estDeverrouillee($galerie)) {
             throw new NotFoundException();
         }
 
-        // La photo doit appartenir à CETTE galerie : sans ce contrôle, un
-        // identifiant arbitraire permettrait de marquer n'importe quelle photo
-        // du site depuis n'importe quel lien.
-        $photo = $this->Galeries->Photos->find()
-            ->matching('Galeries', fn($q) => $q->where(['Galeries.id' => $galerie->id]))
-            ->where(['Photos.id' => (int)$photoId])
-            ->first();
+        $photo = $selection->photoDeLaGalerie($galerie, (int)$photoId);
 
         if ($photo === null) {
             throw new NotFoundException();
         }
 
-        $favoris = $this->fetchTable('GalerieFavoris');
-        $identite = $this->Authentication->getIdentity();
-        $conditions = [
-            'galerie_id' => $galerie->id,
-            'photo_id' => $photo->id,
-        ];
+        $resultat = $selection->basculer($galerie, $photo, $this->identiteVisiteur());
 
-        if ($identite !== null) {
-            $conditions['user_id'] = $identite->getIdentifier();
-        } else {
-            $conditions['session_key'] = $this->cleVisiteur();
-        }
-
-        $existant = $favoris->find()->where($conditions)->first();
-        $actif = false;
-
-        if ($existant !== null) {
-            $favoris->delete($existant);
-        } else {
-            $atteint = $galerie->quota_favoris > 0
-                && count($this->favorisDuVisiteur($galerie)) >= $galerie->quota_favoris;
-
-            if ($atteint) {
-                $this->Flash->error(__(
-                    'Vous avez atteint la limite de {0} photos.',
-                    $galerie->quota_favoris,
-                ));
-            } else {
-                $favoris->saveOrFail($favoris->newEntity($conditions));
-                $actif = true;
-            }
+        if ($resultat->quotaAtteint) {
+            $this->Flash->error(__(
+                'Vous avez atteint la limite de {0} photos.',
+                $galerie->quota_favoris,
+            ));
         }
 
         if ($this->request->is('htmx')) {
-            $this->set(compact('galerie', 'photo', 'actif'));
+            $this->set('galerie', $galerie);
+            $this->set('photo', $photo);
+            $this->set('actif', $resultat->retenue);
             $this->viewBuilder()->disableAutoLayout();
 
             return $this->render('/element/bouton_favori');
@@ -182,8 +159,9 @@ class GaleriesController extends AppController
      * @param string|null $token Jeton de partage.
      * @return \Cake\Http\Response
      */
-    public function telecharger(?string $token = null): Response
+    public function telecharger(?string $token = null, ?SelectionClient $selection = null): Response
     {
+        $selection ??= new SelectionClient();
         $galerie = $this->chargerParToken($token);
 
         if ($galerie->estProtege() && !$this->estDeverrouillee($galerie)) {
@@ -194,43 +172,17 @@ class GaleriesController extends AppController
             throw new NotFoundException();
         }
 
-        $favoris = $this->favorisDuVisiteur($galerie);
+        $visiteur = $this->identiteVisiteur();
+        $photos = $selection->photosALivrer($galerie, $selection->photosRetenues($galerie, $visiteur));
+        $chemin = $selection->archiver($galerie, $photos);
 
-        // Rien de retenu : on livre la galerie entière plutôt qu'une archive
-        // vide, qui n'aiderait personne.
-        $aLivrer = $favoris === []
-            ? $galerie->photos
-            : array_filter($galerie->photos, fn($photo) => in_array($photo->id, $favoris, true));
-
-        if ($aLivrer === []) {
+        if ($chemin === null) {
             throw new NotFoundException();
         }
-
-        $archive = new ZipArchive();
-        $chemin = TMP . 'galerie-' . $galerie->id . '-' . bin2hex(Security::randomBytes(8)) . '.zip';
-
-        if ($archive->open($chemin, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new NotFoundException();
-        }
-
-        foreach ($aLivrer as $photo) {
-            $source = WWW_ROOT . 'media' . DS . 'photos' . DS . $photo->fichier . '-large.jpeg';
-
-            if (is_file($source)) {
-                // Nom lisible dans l'archive plutôt que l'UUID interne : le
-                // client doit pouvoir s'y retrouver.
-                $archive->addFile($source, sprintf('%s-%s.jpg', $galerie->slug, $photo->slug));
-            }
-        }
-
-        $archive->close();
 
         // `withFile()` supprime le fichier temporaire après l'envoi.
         return $this->response
-            ->withFile($chemin, [
-                'download' => true,
-                'name' => $galerie->slug . '.zip',
-            ])
+            ->withFile($chemin, ['download' => true, 'name' => $galerie->slug . '.zip'])
             ->withHeader('Content-Type', 'application/zip');
     }
 
@@ -257,27 +209,24 @@ class GaleriesController extends AppController
     }
 
     /**
-     * Identifiants des photos retenues par le visiteur courant.
+     * Identité du visiteur, sous forme de conditions de requête.
      *
-     * @param \App\Model\Entity\Galerie $galerie Galerie concernée.
-     * @return list<int>
+     * Un client connecté est identifié par son compte ; un visiteur arrivé par
+     * lien ne l'est que par une clé de session, tirée au sort à sa première
+     * sélection. C'est ce qui permet à un inconnu de retrouver ses choix en
+     * revenant sur la page.
+     *
+     * @return array<string, mixed>
      */
-    protected function favorisDuVisiteur(Galerie $galerie): array
+    protected function identiteVisiteur(): array
     {
         $identite = $this->Authentication->getIdentity();
-        $conditions = ['galerie_id' => $galerie->id];
 
         if ($identite !== null) {
-            $conditions['user_id'] = $identite->getIdentifier();
-        } else {
-            $conditions['session_key'] = $this->cleVisiteur();
+            return ['user_id' => $identite->getIdentifier()];
         }
 
-        return $this->fetchTable('GalerieFavoris')->find()
-            ->where($conditions)
-            ->all()
-            ->extract('photo_id')
-            ->toList();
+        return ['session_key' => $this->cleVisiteur()];
     }
 
     /**

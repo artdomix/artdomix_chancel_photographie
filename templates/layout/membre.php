@@ -25,12 +25,17 @@ $identite = $this->getRequest()->getAttribute('identity');
                class="font-display text-xl uppercase tracking-titre">
                 Chancel
             </a>
-            <div class="flex items-center gap-6 text-sm">
-                <?php if ($identite !== null) : ?>
-                    <span class="text-gris"><?= h($identite->getOriginalData()->nom_complet) ?></span>
-                <?php endif; ?>
+            <nav class="flex items-center gap-6 text-sm" aria-label="Navigation de l'espace membre">
+                <a class="lien-souligne"
+                   href="<?= $this->Url->build(['prefix' => 'Membre', 'controller' => 'Tableau', 'action' => 'index']) ?>">
+                    Mes livraisons
+                </a>
+                <a class="lien-souligne"
+                   href="<?= $this->Url->build(['prefix' => 'Membre', 'controller' => 'Compte', 'action' => 'index']) ?>">
+                    <?= $identite !== null ? h($identite->getOriginalData()->nom_complet) : 'Mon compte' ?>
+                </a>
                 <a class="lien-souligne" href="<?= $this->Url->build('/deconnexion') ?>">Déconnexion</a>
-            </div>
+            </nav>
         </div>
     </header>
 

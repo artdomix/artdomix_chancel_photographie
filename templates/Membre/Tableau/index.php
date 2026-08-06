@@ -36,10 +36,23 @@
         <ul class="grid gap-4 md:grid-cols-2">
             <?php foreach ($moodboards as $moodboard) : ?>
                 <li class="border border-white/10 bg-noir-carte p-5">
+                    <?php
+                    // Lien interne, et non `/m/{jeton}` : le chemin public
+                    // redemanderait le mot de passe d'un moodboard privé, alors
+                    // que le destinataire est déjà identifié par son compte.
+                    ?>
                     <a class="lien-souligne font-display uppercase tracking-titre"
-                       href="<?= $this->Url->build('/m/' . $moodboard->share_token) ?>">
+                       href="<?= $this->Url->build([
+                           'prefix' => 'Membre',
+                           'controller' => 'Moodboards',
+                           'action' => 'voir',
+                           $moodboard->id,
+                       ]) ?>">
                         <?= h($moodboard->titre) ?>
                     </a>
+                    <p class="mt-2 text-sm text-gris">
+                        <?= h($moodboard->theme->label()) ?>
+                    </p>
                 </li>
             <?php endforeach; ?>
         </ul>
