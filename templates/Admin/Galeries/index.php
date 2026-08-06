@@ -62,6 +62,10 @@ $maintenant = new DateTime();
                             'class' => 'text-gris hover:text-red-400',
                             'confirm' => 'Les liens déjà envoyés cesseront de fonctionner. Continuer ?',
                         ]) ?>
+                        <?= $this->Form->postLink('Supprimer', ['action' => 'supprimer', $galerie->id], [
+                            'class' => 'text-gris hover:text-red-400',
+                            'confirm' => 'La galerie, ses favoris et ses retours seront supprimés. Les photos, elles, sont conservées. Continuer ?',
+                        ]) ?>
                     </span>
                 </td>
             </tr>

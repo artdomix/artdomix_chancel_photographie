@@ -40,16 +40,23 @@ class AlbumsController extends AppController
     }
 
     /**
-     * @param string|null $id Identifiant de l'album.
+     * Création ou édition selon la présence d'un identifiant.
+     *
+     * @param string|null $id Identifiant de l'album, ou null pour une création.
      * @return \Cake\Http\Response|null
      */
     public function modifier(?string $id = null): ?Response
     {
         $albums = $this->fetchTable('Albums');
-        $album = $albums->find()
-            ->where(['Albums.id' => (int)$id])
-            ->contain(['Photos' => fn($q) => $q->orderBy(['AlbumsPhotos.ordre' => 'ASC'])])
-            ->first();
+
+        // Un album neuf n'a ni photos ni bornes d'arbre : le TreeBehavior les
+        // pose à l'enregistrement, d'après le `parent_id` choisi.
+        $album = $id === null
+            ? $albums->newEmptyEntity()
+            : $albums->find()
+                ->where(['Albums.id' => (int)$id])
+                ->contain(['Photos' => fn($q) => $q->orderBy(['AlbumsPhotos.ordre' => 'ASC'])])
+                ->first();
 
         if ($album === null) {
             throw new NotFoundException();
@@ -67,16 +74,54 @@ class AlbumsController extends AppController
             $this->Flash->error(__("L'album n'a pas pu être enregistré."));
         }
 
-        // L'album lui-même est retiré de la liste des parents possibles : se
-        // choisir soi-même comme parent corromprait l'arbre.
-        $parents = $albums->find('treeList', spacer: ' — ')
-            ->where(['Albums.id !=' => $album->id])
-            ->toArray();
+        $parents = $albums->find('treeList', spacer: ' — ');
 
-        $this->set(compact('album', 'parents'));
-        $this->set('title', 'Modifier un album');
+        // L'album lui-même est retiré de la liste des parents possibles : se
+        // choisir soi-même comme parent corromprait l'arbre. À la création il
+        // n'a pas encore d'identifiant, la restriction ne s'applique pas.
+        if (!$album->isNew()) {
+            $parents->where(['Albums.id !=' => $album->id]);
+        }
+
+        $this->set('album', $album);
+        $this->set('parents', $parents->toArray());
+        $this->set('title', $album->isNew() ? 'Nouvel album' : 'Modifier un album');
 
         return null;
+    }
+
+    /**
+     * Supprime un album.
+     *
+     * Le `TreeBehavior` réordonne les bornes des voisins, et la clé étrangère de
+     * `parent_id` est en `ON DELETE CASCADE` : supprimer une branche emporte ses
+     * sous-albums. La confirmation du gabarit le dit explicitement, parce que la
+     * liste ne montre pas d'un coup d'œil combien d'enfants sont concernés.
+     *
+     * Les photos, elles, survivent : elles ne sont liées que par la table de
+     * jonction `albums_photos`.
+     *
+     * @param string|null $id Identifiant de l'album.
+     * @return \Cake\Http\Response|null
+     */
+    public function supprimer(?string $id = null): ?Response
+    {
+        $this->request->allowMethod(['post', 'delete']);
+
+        $albums = $this->fetchTable('Albums');
+        $album = $albums->find()->where(['Albums.id' => (int)$id])->first();
+
+        if ($album === null) {
+            throw new NotFoundException();
+        }
+
+        if ($albums->delete($album)) {
+            $this->Flash->success(__('Album supprimé.'));
+        } else {
+            $this->Flash->error(__("L'album n'a pas pu être supprimé."));
+        }
+
+        return $this->redirect(['action' => 'index']);
     }
 
     /**

@@ -30,6 +30,10 @@ $brancher = function (iterable $noeuds, int $profondeur = 0) use (&$brancher): s
             'class' => 'text-gris hover:text-corail', 'escapeTitle' => false, 'title' => 'Descendre',
         ]);
         $html .= $this->Html->link('Modifier', ['action' => 'modifier', $album->id], ['class' => 'lien-souligne']);
+        $html .= $this->Form->postLink('Supprimer', ['action' => 'supprimer', $album->id], [
+            'class' => 'text-gris hover:text-red-400',
+            'confirm' => "L'album et ses sous-albums seront supprimés. Les photos, elles, sont conservées. Continuer ?",
+        ]);
         $html .= '</span></div>';
 
         if (!empty($album->children)) {
@@ -42,8 +46,18 @@ $brancher = function (iterable $noeuds, int $profondeur = 0) use (&$brancher): s
     return $html;
 };
 ?>
-<h1 class="mb-8 text-2xl">Albums</h1>
+<div class="mb-8 flex items-center justify-between">
+    <h1 class="text-2xl">Albums</h1>
+    <a class="bg-corail px-5 py-2 font-display text-sm uppercase tracking-titre text-noir hover:bg-corail-sombre"
+       href="<?= $this->Url->build(['action' => 'modifier']) ?>">Nouvel album</a>
+</div>
 
-<ul class="max-w-3xl">
-    <?= $brancher($albums) ?>
-</ul>
+<?php if (count($albums) === 0) : ?>
+    <p class="py-16 text-center text-gris">
+        Aucun album. Créez-en un pour commencer à organiser le portfolio.
+    </p>
+<?php else : ?>
+    <ul class="max-w-3xl">
+        <?= $brancher($albums) ?>
+    </ul>
+<?php endif; ?>

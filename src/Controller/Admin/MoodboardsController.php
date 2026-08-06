@@ -106,4 +106,28 @@ class MoodboardsController extends AppController
 
         return $this->redirect(['action' => 'index']);
     }
+
+    /**
+     * @param string|null $id Identifiant du moodboard.
+     * @return \Cake\Http\Response|null
+     */
+    public function supprimer(?string $id = null): ?Response
+    {
+        $this->request->allowMethod(['post', 'delete']);
+
+        $table = $this->fetchTable('Moodboards');
+        $entite = $table->find()->where(['Moodboards.id' => (int)$id])->first();
+
+        if ($entite === null) {
+            throw new NotFoundException();
+        }
+
+        if ($table->delete($entite)) {
+            $this->Flash->success(__('Moodboard supprimé.'));
+        } else {
+            $this->Flash->error(__("Le moodboard n'a pas pu être supprimé."));
+        }
+
+        return $this->redirect(['action' => 'index']);
+    }
 }

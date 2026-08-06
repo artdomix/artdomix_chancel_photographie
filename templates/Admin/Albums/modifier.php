@@ -10,7 +10,9 @@ use App\Model\Enum\VisibiliteAlbum;
 
 $champ = 'w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-corail';
 ?>
-<h1 class="mb-8 text-2xl">Modifier « <?= h($album->nom) ?> »</h1>
+<h1 class="mb-8 text-2xl">
+    <?= $album->isNew() ? 'Nouvel album' : 'Modifier « ' . h($album->nom) . ' »' ?>
+</h1>
 
 <?= $this->Form->create($album, ['class' => 'max-w-xl space-y-5']) ?>
     <?= $this->Form->control('nom', ['label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
@@ -21,23 +23,37 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-cor
     <?= $this->Form->button('Enregistrer', ['class' => 'bg-corail px-6 py-2 font-display text-sm uppercase tracking-titre text-noir hover:bg-corail-sombre']) ?>
 <?= $this->Form->end() ?>
 
-<h2 class="mb-2 mt-12 text-lg">Ordre des photos</h2>
-<p class="mb-4 text-sm text-gris">
-    Glissez les vignettes pour les réordonner, ou utilisez les flèches gauche et
-    droite après avoir sélectionné une vignette au clavier.
-</p>
-<p data-tri-etat class="mb-4 text-sm text-corail" role="status" aria-live="polite"></p>
+<?php
+// Un album qui n'existe pas encore n'a évidemment aucune photo à ordonner : le
+// bloc entier disparaît plutôt que d'afficher une grille vide et un lien
+// « ordonner » sans identifiant.
+?>
+<?php if (!$album->isNew()) : ?>
+    <h2 class="mb-2 mt-12 text-lg">Ordre des photos</h2>
 
-<div data-tri
-     data-tri-url="<?= $this->Url->build(['action' => 'ordonner', $album->id]) ?>"
-     data-csrf="<?= h($this->getRequest()->getAttribute('csrfToken')) ?>"
-     class="grid grid-cols-3 gap-3 md:grid-cols-6">
-    <?php foreach ($album->photos as $photo) : ?>
-        <div data-tri-item="<?= h((string)$photo->id) ?>" tabindex="0"
-             class="cursor-grab focus:outline focus:outline-2 focus:outline-corail">
-            <img src="<?= h($this->Photo->url($photo, 'thumb', 'jpeg')) ?>"
-                 alt="<?= h((string)($photo->titre ?? '')) ?>" width="160" height="107"
-                 loading="lazy" class="w-full object-cover">
+    <?php if (empty($album->photos)) : ?>
+        <p class="mt-4 text-sm text-gris">
+            Aucune photo dans cet album. Rattachez-en depuis la fiche d'une photo.
+        </p>
+    <?php else : ?>
+        <p class="mb-4 text-sm text-gris">
+            Glissez les vignettes pour les réordonner, ou utilisez les flèches gauche et
+            droite après avoir sélectionné une vignette au clavier.
+        </p>
+        <p data-tri-etat class="mb-4 text-sm text-corail" role="status" aria-live="polite"></p>
+
+        <div data-tri
+             data-tri-url="<?= $this->Url->build(['action' => 'ordonner', $album->id]) ?>"
+             data-csrf="<?= h($this->getRequest()->getAttribute('csrfToken')) ?>"
+             class="grid grid-cols-3 gap-3 md:grid-cols-6">
+            <?php foreach ($album->photos as $photo) : ?>
+                <div data-tri-item="<?= h((string)$photo->id) ?>" tabindex="0"
+                     class="cursor-grab focus:outline focus:outline-2 focus:outline-corail">
+                    <img src="<?= h($this->Photo->url($photo, 'thumb', 'jpeg')) ?>"
+                         alt="<?= h((string)($photo->titre ?? '')) ?>" width="160" height="107"
+                         loading="lazy" class="w-full object-cover">
+                </div>
+            <?php endforeach; ?>
         </div>
-    <?php endforeach; ?>
-</div>
+    <?php endif; ?>
+<?php endif; ?>

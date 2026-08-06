@@ -2,10 +2,54 @@
 /**
  * Layout du back-office.
  *
+ * Le menu est décrit en données plutôt qu'en balisage répété : c'est lui qui
+ * fait office d'inventaire des sections, et une entrée ajoutée ici est le seul
+ * geste nécessaire pour qu'une nouvelle section soit atteignable.
+ *
  * @var \App\View\AppView $this
  */
 
-$lien = 'block px-4 py-2 text-sm hover:bg-white/5 hover:text-corail';
+$sections = [
+    '' => [
+        'Tableau' => 'Tableau de bord',
+    ],
+    'Photothèque' => [
+        'Photos' => 'Photos',
+        'Albums' => 'Albums',
+        'Tags' => 'Tags',
+    ],
+    'Partage' => [
+        'Moodboards' => 'Moodboards',
+        'Galeries' => 'Galeries client',
+    ],
+    'Publications' => [
+        'Articles' => 'Articles',
+        'Commentaires' => 'Commentaires',
+        'Pages' => 'Pages',
+    ],
+    'Catalogue' => [
+        'Livres' => 'Livres',
+        'Tirages' => 'Tirages',
+        'Typetirages' => 'Types de tirage',
+        'Expositions' => 'Expositions',
+        'Videos' => 'Vidéos',
+        'Typevideos' => 'Types de vidéo',
+    ],
+    'Séances' => [
+        'Modeles' => 'Modèles',
+        'Shootings' => 'Shootings',
+    ],
+    'Administration' => [
+        'Messages' => 'Messages',
+        'Demandes' => 'Types de demande',
+        'Users' => 'Comptes',
+        'Config' => 'Réglages',
+    ],
+];
+
+$controleurCourant = $this->getRequest()->getParam('controller');
+$lien = 'block px-4 py-1.5 text-sm hover:bg-white/5 hover:text-corail';
+$lienActif = 'block border-l-2 border-corail bg-white/5 px-4 py-1.5 text-sm text-corail';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -22,15 +66,31 @@ $lien = 'block px-4 py-2 text-sm hover:bg-white/5 hover:text-corail';
 <div class="flex min-h-screen">
     <aside class="w-56 shrink-0 border-r border-white/10">
         <div class="px-4 py-5 font-display text-sm uppercase tracking-titre text-corail">Administration</div>
-        <nav aria-label="Navigation du back-office">
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Tableau', 'action' => 'index']) ?>">Tableau de bord</a>
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Photos', 'action' => 'index']) ?>">Photos</a>
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Albums', 'action' => 'index']) ?>">Albums</a>
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Moodboards', 'action' => 'index']) ?>">Moodboards</a>
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Galeries', 'action' => 'index']) ?>">Galeries client</a>
-            <a class="<?= $lien ?>" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Messages', 'action' => 'index']) ?>">Messages</a>
+
+        <nav aria-label="Navigation du back-office" class="pb-8">
+            <?php foreach ($sections as $intitule => $entrees) : ?>
+                <?php if ($intitule !== '') : ?>
+                    <p class="px-4 pb-1 pt-5 text-xs uppercase tracking-titre text-gris">
+                        <?= h($intitule) ?>
+                    </p>
+                <?php endif; ?>
+
+                <?php foreach ($entrees as $controleur => $libelle) : ?>
+                    <?php $actif = $controleurCourant === $controleur; ?>
+                    <a class="<?= $actif ? $lienActif : $lien ?>"
+                       <?= $actif ? 'aria-current="page"' : '' ?>
+                       href="<?= $this->Url->build([
+                           'prefix' => 'Admin',
+                           'controller' => $controleur,
+                           'action' => 'index',
+                       ]) ?>">
+                        <?= h($libelle) ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
         </nav>
-        <div class="mt-8 border-t border-white/10 pt-4">
+
+        <div class="border-t border-white/10 py-4">
             <a class="<?= $lien ?>" href="<?= $this->Url->build('/') ?>">Voir le site</a>
             <a class="<?= $lien ?>" href="<?= $this->Url->build('/deconnexion') ?>">Déconnexion</a>
         </div>

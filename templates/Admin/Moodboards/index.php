@@ -45,6 +45,10 @@
                             'class' => 'text-gris hover:text-red-400',
                             'confirm' => 'Les liens déjà envoyés cesseront de fonctionner. Continuer ?',
                         ]) ?>
+                        <?= $this->Form->postLink('Supprimer', ['action' => 'supprimer', $moodboard->id], [
+                            'class' => 'text-gris hover:text-red-400',
+                            'confirm' => 'Le moodboard et ses retours seront supprimés. Les photos, elles, sont conservées. Continuer ?',
+                        ]) ?>
                     </span>
                 </td>
             </tr>

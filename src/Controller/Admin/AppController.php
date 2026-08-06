@@ -49,5 +49,9 @@ class AppController extends BaseController
 
         $this->Authorization->skipAuthorization();
         $this->viewBuilder()->setLayout('admin');
+
+        // Ajouté ici plutôt que dans AppView : ce helper ne sert qu'aux listes du
+        // back-office, le front n'a aucune raison de le charger.
+        $this->viewBuilder()->addHelper('Admin');
     }
 }

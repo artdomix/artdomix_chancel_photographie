@@ -181,4 +181,28 @@ class GaleriesController extends AppController
 
         return $this->redirect(['action' => 'index']);
     }
+
+    /**
+     * @param string|null $id Identifiant de la galerie.
+     * @return \Cake\Http\Response|null
+     */
+    public function supprimer(?string $id = null): ?Response
+    {
+        $this->request->allowMethod(['post', 'delete']);
+
+        $table = $this->fetchTable('Galeries');
+        $entite = $table->find()->where(['Galeries.id' => (int)$id])->first();
+
+        if ($entite === null) {
+            throw new NotFoundException();
+        }
+
+        if ($table->delete($entite)) {
+            $this->Flash->success(__('Galerie supprimée.'));
+        } else {
+            $this->Flash->error(__("La galerie n'a pas pu être supprimée."));
+        }
+
+        return $this->redirect(['action' => 'index']);
+    }
 }
