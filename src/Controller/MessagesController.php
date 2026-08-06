@@ -3,11 +3,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Mailer\ContactMailer;
 use App\Model\Entity\Message;
 use App\Model\Table\MessagesTable;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
-use Cake\Mailer\Mailer;
+use Closure;
 use Throwable;
 
 /**
@@ -57,6 +58,9 @@ class MessagesController extends AppController
             $message->ip = $this->request->clientIp();
 
             if ($this->Messages->save($message)) {
+                // La nature de la demande figure dans la notification : sans ce
+                // chargement, l'entité fraîchement enregistrée ne la porte pas.
+                $this->Messages->loadInto($message, ['Demandes']);
                 $this->notifierPhotographe($message);
                 $this->Flash->success(__('Merci, votre message a bien été envoyé.'));
 
@@ -101,22 +105,39 @@ class MessagesController extends AppController
     {
         $destinataire = $this->reglage('site.email', 'contact@chancel.art-domix.fr');
 
+        // Le message est déjà en base et consultable depuis l'admin : un échec
+        // d'envoi ne doit pas être remonté au visiteur, qui renverrait son
+        // message pour rien. Il est journalisé, c'est tout.
+        $this->envoyer(
+            fn() => (new ContactMailer())->send('notification', [$message, $destinataire]),
+            'Notification de contact',
+        );
+
+        // L'accusé de réception part séparément : si la notification échoue, le
+        // visiteur doit quand même être rassuré, et réciproquement.
+        //
+        // Il part vers une adresse saisie par un inconnu : c'est le captcha
+        // monté dans `beforeFilter` qui empêche d'en faire un relais à courriels
+        // non sollicités. Le retirer transformerait ce formulaire en arme.
+        $this->envoyer(
+            fn() => (new ContactMailer())->send('accuseReception', [$message, $destinataire]),
+            'Accusé de réception de contact',
+        );
+    }
+
+    /**
+     * Exécute un envoi en journalisant son échec plutôt qu'en le propageant.
+     *
+     * @param \Closure $envoi Envoi à tenter.
+     * @param string $quoi Libellé pour le journal.
+     * @return void
+     */
+    protected function envoyer(Closure $envoi, string $quoi): void
+    {
         try {
-            (new Mailer('default'))
-                ->setTo($destinataire)
-                // L'expéditeur reste le domaine du site : mettre l'adresse du
-                // visiteur ferait échouer SPF/DKIM et finirait en indésirables.
-                ->setReplyTo($message->email, $message->nom)
-                ->setSubject(__('Nouveau message : {0}', $message->sujet ?: 'sans objet'))
-                ->deliver(sprintf(
-                    "%s <%s>\nTéléphone : %s\n\n%s",
-                    $message->nom,
-                    $message->email,
-                    $message->telephone ?: '—',
-                    $message->contenu,
-                ));
+            $envoi();
         } catch (Throwable $e) {
-            $this->log(sprintf('Notification de contact non envoyée : %s', $e->getMessage()), 'warning');
+            $this->log(sprintf('%s non envoyé : %s', $quoi, $e->getMessage()), 'warning');
         }
     }
 

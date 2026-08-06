@@ -3,15 +3,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Mailer\UtilisateurMailer;
 use App\Model\Entity\User;
 use App\Model\Enum\Role;
 use App\Model\Table\UsersTable;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 use Cake\I18n\DateTime;
-use Cake\Mailer\Mailer;
 use Cake\Routing\Router;
 use Cake\Utility\Security;
+use Throwable;
 
 /**
  * Connexion, déconnexion et réinitialisation de mot de passe.
@@ -191,9 +192,19 @@ class UtilisateursController extends AppController
             $utilisateur->token,
         ], true);
 
-        (new Mailer('default'))
-            ->setTo($utilisateur->email)
-            ->setSubject(__('Réinitialisation de votre mot de passe'))
-            ->deliver(__("Bonjour,\n\nPour choisir un nouveau mot de passe : {0}\n\nCe lien expire dans deux heures.", $lien));
+        // L'échec d'envoi est journalisé, jamais propagé. Sans ce garde-fou, un
+        // SMTP en panne faisait remonter une erreur 500 **uniquement** quand
+        // l'adresse existait, là où une adresse inconnue redirigeait
+        // normalement : la différence de réponse suffisait à énumérer les
+        // comptes du site, ce que la réponse indifférenciée plus haut cherche
+        // précisément à empêcher.
+        try {
+            (new UtilisateurMailer())->send('reinitialisation', [$utilisateur, $lien]);
+        } catch (Throwable $e) {
+            $this->log(
+                sprintf('Lien de réinitialisation non envoyé à %s : %s', $utilisateur->email, $e->getMessage()),
+                'warning',
+            );
+        }
     }
 }

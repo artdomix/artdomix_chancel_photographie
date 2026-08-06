@@ -52,6 +52,15 @@ class SitemapController extends AppController
             ['loc' => '/contact', 'priority' => '0.4', 'changefreq' => 'yearly'],
         ];
 
+        foreach ($this->fetchTable('Pages')->find()->where(['Pages.actif' => true])->all() as $page) {
+            $urls[] = [
+                'loc' => '/page/' . $page->slug,
+                'lastmod' => $page->modified?->format('Y-m-d'),
+                'priority' => '0.3',
+                'changefreq' => 'yearly',
+            ];
+        }
+
         // Fiches éditoriales. Le préfixe d'URL est la seule chose qui change
         // d'une rubrique à l'autre, d'où la boucle plutôt que trois blocs.
         foreach (['livres' => 'Livres', 'expositions' => 'Expositions', 'videos' => 'Videos'] as $prefixe => $table) {

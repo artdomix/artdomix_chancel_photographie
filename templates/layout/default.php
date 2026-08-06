@@ -70,6 +70,23 @@ $description = $this->fetch('meta_description')
     </main>
 
     <footer class="border-t border-white/10 py-8 text-center text-sm text-gris">
+        <?php
+        // Les pages éditoriales sont listées ici : sans ce lien, les mentions
+        // légales saisies en administration n'auraient aucun point d'entrée.
+        $pagesPied = $this->Pied->pages();
+        ?>
+        <?php if ($pagesPied !== []) : ?>
+            <ul class="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2">
+                <?php foreach ($pagesPied as $slug => $titre) : ?>
+                    <li>
+                        <a class="lien-souligne" href="<?= $this->Url->build('/page/' . $slug) ?>">
+                            <?= h($titre) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+
         &copy; <?= date('Y') ?> Chancel Photographie
     </footer>
 </body>

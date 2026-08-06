@@ -105,6 +105,13 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/recherche', ['controller' => 'Portfolio', 'action' => 'recherche']);
         $builder->connect('/carte', ['controller' => 'Portfolio', 'action' => 'carte']);
 
+        /*
+         * Pages éditoriales de la base : mentions légales, à propos… Préfixées
+         * par `/page/` plutôt que servies à la racine, pour qu'un slug saisi en
+         * administration ne puisse jamais masquer une route du site.
+         */
+        $builder->connect('/page/*', ['controller' => 'Pages', 'action' => 'voir']);
+
         $builder->connect('/blog', ['controller' => 'Articles', 'action' => 'index']);
         $builder->connect('/blog/*', ['controller' => 'Articles', 'action' => 'voir']);
         $builder->connect('/contact', ['controller' => 'Messages', 'action' => 'contact']);

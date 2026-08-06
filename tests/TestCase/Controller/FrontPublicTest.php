@@ -72,6 +72,52 @@ class FrontPublicTest extends TestCase
     }
 
     /**
+     * Les pages éditoriales de la base.
+     *
+     * La section « Pages » du back-office écrivait dans une table qu'aucune
+     * route du site public ne lisait : les mentions légales saisies restaient
+     * invisibles, sans que rien ne le signale.
+     *
+     * @return void
+     */
+    public function testUnePageEditorialeEstServieEtListeeEnPied(): void
+    {
+        $pages = TableRegistry::getTableLocator()->get('Pages');
+        $pages->deleteAll(['slug' => 'mentions-legales-test']);
+
+        $page = $pages->newEntity([
+            'titre' => 'Mentions légales de test',
+            'slug' => 'mentions-legales-test',
+            'contenu' => '<p>Éditeur : Chancel.</p>',
+            'actif' => true,
+        ]);
+        $pages->saveOrFail($page);
+
+        $this->get('/page/mentions-legales-test');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Mentions légales de test');
+        $this->assertResponseContains('Éditeur : Chancel.');
+
+        // Le pied de page est ce qui rend la page atteignable : sans lui, elle
+        // n'aurait aucun point d'entrée sur le site.
+        $this->get('/');
+        $this->assertResponseContains('/page/mentions-legales-test');
+
+        // Et elle doit figurer au plan de site.
+        $this->get('/sitemap.xml');
+        $this->assertResponseContains('/page/mentions-legales-test');
+
+        // Une page retirée n'est plus servie.
+        $page->actif = false;
+        $pages->saveOrFail($page);
+
+        $this->get('/page/mentions-legales-test');
+        $this->assertResponseCode(404);
+
+        $pages->deleteAll(['slug' => 'mentions-legales-test']);
+    }
+
+    /**
      * Le point central du modèle de sécurité : une action non déclarée publique
      * doit être inaccessible, pas ouverte.
      *

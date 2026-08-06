@@ -23,7 +23,7 @@ class PagesController extends AppController
     {
         parent::beforeFilter($event);
 
-        $this->autoriserPublic(['accueil', 'display']);
+        $this->autoriserPublic(['accueil', 'voir', 'display']);
     }
 
     /**
@@ -58,7 +58,39 @@ class PagesController extends AppController
     }
 
     /**
-     * Pages statiques éventuelles (mentions légales…).
+     * Page éditoriale servie depuis la table `pages`.
+     *
+     * C'est ce que produit la section « Pages » du back-office. Sans cette
+     * action, l'administration écrivait dans une table que le site public ne
+     * lisait jamais : les mentions légales saisies restaient invisibles.
+     *
+     * @param string|null $slug Adresse de la page.
+     * @return void
+     */
+    public function voir(?string $slug = null): void
+    {
+        if ($slug === null) {
+            throw new NotFoundException();
+        }
+
+        $page = $this->fetchTable('Pages')->find()
+            ->where(['Pages.slug' => $slug, 'Pages.actif' => true])
+            ->first();
+
+        if ($page === null) {
+            throw new NotFoundException();
+        }
+
+        $this->set(compact('page'));
+        $this->set('title', $page->titre . ' — Chancel Photographie');
+    }
+
+    /**
+     * Gabarits statiques livrés avec le code (`templates/Pages/<chemin>.php`).
+     *
+     * Distinct de `voir()` : celui-ci sert des fichiers versionnés, celui-là des
+     * lignes de la base. Conservé pour les pages qui relèvent du code plutôt que
+     * de l'édition.
      *
      * @param string ...$path Segments du chemin.
      * @return \Cake\Http\Response|null
