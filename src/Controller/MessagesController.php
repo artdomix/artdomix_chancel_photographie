@@ -19,6 +19,16 @@ use Throwable;
 class MessagesController extends AppController
 {
     /**
+     * Destinataire des notifications, à défaut de réglage en base.
+     *
+     * C'est cette valeur qui sert en production : la table `config` n'est
+     * alimentée que par le seed de démonstration, qui n'y tourne jamais. Le
+     * photographe peut la remplacer sans toucher au code, depuis
+     * Administration → Réglages, clé `site.email`.
+     */
+    protected const EMAIL_PAR_DEFAUT = 'dodo15@msn.com';
+
+    /**
      * Déclarée explicitement : depuis PHP 8.2, affecter une propriété non
      * déclarée émet une dépréciation.
      *
@@ -103,7 +113,7 @@ class MessagesController extends AppController
      */
     protected function notifierPhotographe(Message $message): void
     {
-        $destinataire = $this->reglage('site.email', 'contact@chancel.art-domix.fr');
+        $destinataire = $this->reglage('site.email', self::EMAIL_PAR_DEFAUT);
 
         // Le message est déjà en base et consultable depuis l'admin : un échec
         // d'envoi ne doit pas être remonté au visiteur, qui renverrait son

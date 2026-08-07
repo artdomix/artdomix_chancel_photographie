@@ -103,7 +103,7 @@ class DemoSeed extends BaseSeed
             ],
             [
                 'cle' => 'site.email',
-                'valeur' => 'contact@chancel.art-domix.fr',
+                'valeur' => 'dodo15@msn.com',
                 'libelle' => 'E-mail de contact',
                 'type' => 'texte',
                 'created' => $maintenant,
