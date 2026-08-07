@@ -50,15 +50,30 @@ $description = $this->fetch('meta_description')
             <nav id="menu-principal" data-menu-panneau hidden
                  class="absolute inset-x-0 top-16 z-40 border-b border-white/10 bg-noir px-6 py-4 md:static md:!block md:border-0 md:bg-transparent md:p-0"
                  aria-label="Navigation principale">
-                <ul class="flex flex-col gap-4 font-display text-sm tracking-titre uppercase md:flex-row md:gap-8">
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/portfolio') ?>">Portfolio</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/tirages') ?>">Tirages</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/livres') ?>">Livres</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/expositions') ?>">Expositions</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/videos') ?>">Vidéos</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/carte') ?>">Carte</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/blog') ?>">Blog</a></li>
-                    <li><a class="lien-souligne" href="<?= $this->Url->build('/contact') ?>">Contact</a></li>
+                <ul class="flex flex-col gap-4 font-display text-sm tracking-titre uppercase md:flex-row md:flex-wrap md:items-center md:gap-x-5 md:gap-y-2 lg:gap-x-7">
+                    <?php foreach ($this->Navigation->principal() as $entree) : ?>
+                        <li>
+                            <a class="<?= $entree['actif'] ? 'text-corail' : 'lien-souligne' ?>"
+                               <?= $entree['actif'] ? 'aria-current="page"' : '' ?>
+                               href="<?= $this->Url->build($entree['chemin']) ?>">
+                                <?= h($entree['libelle']) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+
+                    <?php
+                    // Séparé des rubriques : « Connexion » n'est pas une page du
+                    // site mais l'entrée d'un espace privé. Sans ce lien, un
+                    // client détenteur d'un compte devait connaître l'URL.
+                    ?>
+                    <?php foreach ($this->Navigation->compte() as $entree) : ?>
+                        <li class="md:ml-auto md:border-l md:border-white/10 md:pl-5">
+                            <a class="lien-souligne text-gris"
+                               href="<?= $this->Url->build($entree['chemin']) ?>">
+                                <?= h($entree['libelle']) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
                 </ul>
             </nav>
         </div>
@@ -73,7 +88,7 @@ $description = $this->fetch('meta_description')
         <?php
         // Les pages éditoriales sont listées ici : sans ce lien, les mentions
         // légales saisies en administration n'auraient aucun point d'entrée.
-        $pagesPied = $this->Pied->pages();
+        $pagesPied = $this->Navigation->pages();
         ?>
         <?php if ($pagesPied !== []) : ?>
             <ul class="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2">

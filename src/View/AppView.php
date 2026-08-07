@@ -40,7 +40,7 @@ class AppView extends View
         $this->addHelper('Assets');
         $this->addHelper('Photo');
         $this->addHelper('Seo');
-        $this->addHelper('Pied');
+        $this->addHelper('Navigation');
         $this->addHelper('Captcha.Captcha');
     }
 
