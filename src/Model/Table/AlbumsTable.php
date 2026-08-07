@@ -96,6 +96,11 @@ class AlbumsTable extends Table
             ->notEmptyString('nom');
 
         $validator
+            ->scalar('chapeau')
+            ->maxLength('chapeau', 255)
+            ->allowEmptyString('chapeau');
+
+        $validator
             ->scalar('slug')
             ->maxLength('slug', 190)
             ->allowEmptyString('slug')

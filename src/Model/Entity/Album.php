@@ -10,6 +10,7 @@ use Cake\ORM\Entity;
  *
  * @property int $id
  * @property string $nom
+ * @property string|null $chapeau
  * @property string $slug
  * @property string|null $description
  * @property int|null $parent_id
@@ -41,6 +42,7 @@ class Album extends Entity
      */
     protected array $_accessible = [
         'nom' => true,
+        'chapeau' => true,
         'slug' => true,
         'description' => true,
         'parent_id' => true,

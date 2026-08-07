@@ -8,12 +8,17 @@
  * @var \App\View\AppView $this
  * @var iterable $photos
  * @var bool|null $paginer
+ * @var string|null $serie
  */
 
 // L'accueil affiche une sélection non paginée : appeler le Paginator sur une
 // requête qui n'a pas été paginée lève une exception. La pagination est donc
 // explicitement demandée par les pages qui en ont une.
 $paginer = $paginer ?? false;
+
+// Slug de la série d'où l'on regarde, transmis à la fiche de chaque photo pour
+// que « précédent / suivant » suive la série parcourue et non une autre.
+$serie = $serie ?? '';
 ?>
 <?php if (count($photos) === 0) : ?>
     <p class="py-16 text-center text-gris">Aucune photo pour l'instant.</p>
@@ -21,7 +26,10 @@ $paginer = $paginer ?? false;
     <div data-anim="grille" data-galerie
          class="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
         <?php foreach ($photos as $photo) : ?>
-            <?= $this->Photo->vignette($photo, ['sizes' => '(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw']) ?>
+            <?= $this->Photo->vignette($photo, [
+                'sizes' => '(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw',
+                'serie' => $serie,
+            ]) ?>
         <?php endforeach; ?>
     </div>
 

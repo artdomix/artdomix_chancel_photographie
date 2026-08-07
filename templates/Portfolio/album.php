@@ -17,10 +17,34 @@ foreach ($ancetres as $ancetre) {
 ?>
 <?= $this->Seo->partage([
     'titre' => $album->nom . ' — Chancel Photographie',
-    'description' => (string)($album->description ?: 'Galerie photo.'),
+    // Le chapô sert d'abord ici : c'est le texte court fait pour être lu hors
+    // de son contexte, dans un aperçu de partage ou un résultat de recherche.
+    'description' => (string)($album->chapeau ?: $album->description ?: 'Galerie photo.'),
     'image' => $album->cover_photo,
 ]) ?>
 <?= $this->Seo->filAriane($fil) ?>
+
+<?php if ($album->cover_photo !== null) : ?>
+    <?php
+    // Ouverture pleine largeur : une série se présente par une image, pas par un
+    // titre. Elle n'est pas différée, c'est elle que mesure le LCP.
+    ?>
+    <figure class="relative">
+        <?= $this->Photo->image($album->cover_photo, 'large', [
+            'class' => 'h-[45vh] w-full object-cover md:h-[70vh]',
+            'sizes' => '100vw',
+            'lazy' => false,
+        ]) ?>
+        <div class="absolute inset-0 bg-gradient-to-t from-noir via-noir/30 to-transparent"></div>
+
+        <figcaption class="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-10">
+            <h1 data-anim="titre" class="text-3xl md:text-6xl"><?= h($album->nom) ?></h1>
+            <?php if ($album->chapeau) : ?>
+                <p data-anim class="mt-4 max-w-2xl text-lg text-gris-clair"><?= h($album->chapeau) ?></p>
+            <?php endif; ?>
+        </figcaption>
+    </figure>
+<?php endif; ?>
 
 <section class="mx-auto max-w-7xl px-6 py-12">
     <nav aria-label="Fil d'Ariane" class="mb-8 text-sm text-gris">
@@ -36,9 +60,21 @@ foreach ($ancetres as $ancetre) {
         <?php endforeach; ?>
     </nav>
 
-    <h1 data-anim="titre" class="text-3xl md:text-5xl"><?= h($album->nom) ?></h1>
+    <?php if ($album->cover_photo === null) : ?>
+        <h1 data-anim="titre" class="text-3xl md:text-5xl"><?= h($album->nom) ?></h1>
+        <?php if ($album->chapeau) : ?>
+            <p data-anim class="mt-4 max-w-2xl text-lg text-gris-clair"><?= h($album->chapeau) ?></p>
+        <?php endif; ?>
+    <?php endif; ?>
+
     <?php if ($album->description) : ?>
-        <p data-anim class="mt-4 max-w-2xl text-gris"><?= h($album->description) ?></p>
+        <?php
+        // Texte d'intention, en pleine largeur de lecture : c'est le propos de la
+        // série, pas une légende.
+        ?>
+        <div data-anim class="mt-6 max-w-2xl leading-relaxed text-gris">
+            <?= nl2br(h($album->description)) ?>
+        </div>
     <?php endif; ?>
 
     <?php if (count($sousAlbums) > 0) : ?>
@@ -53,6 +89,10 @@ foreach ($ancetres as $ancetre) {
     <?php endif; ?>
 
     <div class="mt-10">
-        <?= $this->element('grille_photos', ['photos' => $photos, 'paginer' => true]) ?>
+        <?= $this->element('grille_photos', [
+            'photos' => $photos,
+            'paginer' => true,
+            'serie' => $album->slug,
+        ]) ?>
     </div>
 </section>

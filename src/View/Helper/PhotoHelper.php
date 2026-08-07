@@ -116,10 +116,19 @@ class PhotoHelper extends Helper
     {
         $legende = (string)($photo->titre ?? '');
 
+        // La lightbox sert à parcourir, la fiche à s'arrêter : elle porte le
+        // texte, les métadonnées et l'adresse partageable. Sans ce lien, la page
+        // photo n'était atteignable que depuis un moteur de recherche.
+        $serie = (string)($options['serie'] ?? '');
+        $fiche = '/photo/' . $photo->slug . ($serie !== '' ? '?serie=' . rawurlencode($serie) : '');
+        unset($options['serie']);
+
         return sprintf(
             '<button type="button" class="group block w-full overflow-hidden" '
-            . 'data-lightbox data-lightbox-legende="%s" data-anim-item aria-label="%s">%s</button>',
+            . 'data-lightbox data-lightbox-legende="%s" data-lightbox-fiche="%s" '
+            . 'data-anim-item aria-label="%s">%s</button>',
             h($legende),
+            h($this->Url->build($fiche)),
             h(__('Agrandir : {0}', $legende !== '' ? $legende : __('photo'))),
             $this->image($photo, 'grid', $options + [
                 'class' => 'w-full transition-transform duration-700 ease-out group-hover:scale-105',

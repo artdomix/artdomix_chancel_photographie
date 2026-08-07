@@ -3,10 +3,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\Album;
+use App\Model\Entity\Photo;
 use App\Model\Table\AlbumsTable;
 use App\Model\Table\PhotosTable;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\ORM\Query\SelectQuery;
 
 /**
  * Portfolio public : arbre d'albums, photo isolée, tags, recherche et carte.
@@ -100,9 +103,7 @@ class PortfolioController extends AppController
             ->all();
 
         $photos = $this->paginate(
-            $this->Photos->find('actives')
-                ->find('chronologique')
-                ->matching('Albums', fn($q) => $q->where(['Albums.id' => $album->id])),
+            $this->photosDeLAlbum($album->id),
             ['limit' => self::PAR_PAGE],
         );
 
@@ -140,7 +141,20 @@ class PortfolioController extends AppController
             throw new NotFoundException(__('Photo introuvable.'));
         }
 
-        $this->set(compact('photo'));
+        // Une photo peut appartenir à plusieurs séries : celle d'où l'on vient
+        // est passée en paramètre, sinon on retient la première publique. Sans ce
+        // contexte, la page serait une impasse — or c'est elle que les moteurs
+        // indexent et que l'on partage.
+        $serie = $this->serieDeReference($photo, (string)$this->request->getQuery('serie', ''));
+        $voisines = $serie === null ? [] : $this->voisinesDansLaSerie($serie, $photo->id);
+
+        $this->set(compact('photo', 'serie'));
+        $this->set('precedente', $voisines['precedente'] ?? null);
+        $this->set('suivante', $voisines['suivante'] ?? null);
+        $this->set('memeSerie', $voisines['autres'] ?? []);
+        $this->set('ancetres', $serie === null
+            ? []
+            : $this->Albums->find('path', for: $serie->id)->all());
         $this->set('title', ($photo->titre ?? 'Photo') . ' — Chancel Photographie');
     }
 
@@ -236,5 +250,93 @@ class PortfolioController extends AppController
         $this->set(compact('points'));
         $this->set('nbPoints', count($points));
         $this->set('title', 'Carte — Chancel Photographie');
+    }
+
+    /**
+     * Photos d'un album, dans l'ordre voulu par le photographe.
+     *
+     * `albums_photos.ordre` prime, la chronologie départage les ex æquo. C'est ce
+     * qui permet à une série d'être *racontée* plutôt que déroulée par date — et
+     * un album jamais ordonné garde exactement le classement d'avant, puisque
+     * toutes ses lignes partagent le même `ordre`.
+     *
+     * @param int $albumId Identifiant de l'album.
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    protected function photosDeLAlbum(int $albumId): SelectQuery
+    {
+        return $this->Photos->find('actives')
+            ->contain(['Exifs'])
+            ->leftJoinWith('Exifs')
+            ->matching('Albums', fn($q) => $q->where(['Albums.id' => $albumId]))
+            ->orderBy([
+                'AlbumsPhotos.ordre' => 'ASC',
+                'COALESCE(Exifs.date_capture, Photos.created)' => 'DESC',
+                'Photos.id' => 'DESC',
+            ]);
+    }
+
+    /**
+     * Série servant de contexte à une photo.
+     *
+     * @param \App\Model\Entity\Photo $photo Photo affichée.
+     * @param string $demandee Slug de série passé en paramètre, éventuellement vide.
+     * @return \App\Model\Entity\Album|null
+     */
+    protected function serieDeReference(Photo $photo, string $demandee): ?Album
+    {
+        $publics = $this->Albums->find('publics')
+            ->matching('Photos', fn($q) => $q->where(['Photos.id' => $photo->id]));
+
+        if ($demandee !== '') {
+            // Le paramètre vient de l'URL : il est confronté aux albums publics
+            // de cette photo, jamais suivi tel quel.
+            $serie = (clone $publics)->where(['Albums.slug' => $demandee])->first();
+
+            if ($serie !== null) {
+                return $serie;
+            }
+        }
+
+        return $publics->orderBy(['Albums.lft' => 'ASC'])->first();
+    }
+
+    /**
+     * Photo précédente, suivante, et quelques autres de la même série.
+     *
+     * @param \App\Model\Entity\Album $serie Série de référence.
+     * @param int $photoId Photo affichée.
+     * @return array<string, mixed>
+     */
+    protected function voisinesDansLaSerie(Album $serie, int $photoId): array
+    {
+        // La série entière est chargée : il faut connaître la position de la
+        // photo dans la séquence pour désigner ses voisines, et une série de
+        // photographe se compte en dizaines, pas en milliers.
+        $sequence = $this->photosDeLAlbum($serie->id)->all()->toList();
+        $position = null;
+
+        foreach ($sequence as $index => $candidate) {
+            if ($candidate->id === $photoId) {
+                $position = $index;
+
+                break;
+            }
+        }
+
+        if ($position === null) {
+            return [];
+        }
+
+        $autres = array_values(array_filter(
+            $sequence,
+            fn($candidate) => $candidate->id !== $photoId,
+        ));
+
+        return [
+            'precedente' => $sequence[$position - 1] ?? null,
+            'suivante' => $sequence[$position + 1] ?? null,
+            'autres' => array_slice($autres, 0, 6),
+        ];
     }
 }

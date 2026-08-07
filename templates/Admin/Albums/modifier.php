@@ -16,7 +16,29 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-cor
 
 <?= $this->Form->create($album, ['class' => 'max-w-xl space-y-5']) ?>
     <?= $this->Form->control('nom', ['label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
-    <?= $this->Form->control('description', ['type' => 'textarea', 'rows' => 3, 'label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
+    <div>
+        <?= $this->Form->control('chapeau', [
+            'label' => ['text' => 'Chapô', 'class' => 'mb-2 block text-sm text-gris'],
+            'maxlength' => 255,
+            'class' => $champ,
+        ]) ?>
+        <p class="mt-1 text-xs text-gris">
+            Une phrase, affichée sous le titre de la série et dans les aperçus de
+            partage. C'est le texte que lira quelqu'un qui ne connaît pas la série.
+        </p>
+    </div>
+
+    <div>
+        <?= $this->Form->control('description', [
+            'type' => 'textarea',
+            'rows' => 6,
+            'label' => ['text' => "Texte d'intention", 'class' => 'mb-2 block text-sm text-gris'],
+            'class' => $champ,
+        ]) ?>
+        <p class="mt-1 text-xs text-gris">
+            Le propos de la série, affiché en pleine largeur de lecture avant les photos.
+        </p>
+    </div>
     <?= $this->Form->control('parent_id', ['type' => 'select', 'options' => $parents, 'empty' => '— Racine —', 'label' => ['text' => 'Album parent', 'class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
     <?= $this->Form->control('visibilite', ['type' => 'select', 'options' => VisibiliteAlbum::options(), 'label' => ['class' => 'mb-2 block text-sm text-gris'], 'class' => $champ]) ?>
     <?= $this->Form->control('actif', ['label' => ['text' => 'En ligne', 'class' => 'text-sm text-gris']]) ?>

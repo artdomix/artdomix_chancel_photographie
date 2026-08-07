@@ -302,6 +302,7 @@
 
     function construireLightbox(item) {
         var legende = item.dataset.lightboxLegende || '';
+        var fiche = item.dataset.lightboxFiche || '';
         var conteneur = document.createElement('div');
 
         conteneur.className = 'fixed inset-0 z-50 flex items-center justify-center';
@@ -312,7 +313,15 @@
             + '<div data-lightbox-fond class="absolute inset-0 bg-noir/95"></div>'
             + '<div data-lightbox-scene class="relative flex max-h-[88vh] max-w-[92vw] items-center justify-center"></div>'
             + '<p class="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 text-center text-sm text-gris">'
-            + escaper(legende) + '</p>'
+            + escaper(legende)
+            // Passage de la lightbox à la fiche : celle-ci porte le texte, les
+            // métadonnées et l'adresse partageable. Un lien, et non un bouton :
+            // il doit s'ouvrir dans un nouvel onglet au clic du milieu.
+            + (fiche
+                ? '<br><a class="lien-souligne text-corail" href="' + escaperAttribut(fiche)
+                    + '">Voir la fiche</a>'
+                : '')
+            + '</p>'
             + '<button type="button" data-lightbox-precedent class="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-blanc-casse hover:text-corail" aria-label="Photo précédente">&#8249;</button>'
             + '<button type="button" data-lightbox-suivant class="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-blanc-casse hover:text-corail" aria-label="Photo suivante">&#8250;</button>'
             + '<button type="button" data-lightbox-fermer class="absolute right-4 top-4 p-3 text-blanc-casse hover:text-corail" aria-label="Fermer">&#10005;</button>';
@@ -327,6 +336,16 @@
         });
 
         return conteneur;
+    }
+
+    /**
+     * Échappe une valeur destinée à un attribut HTML.
+     *
+     * `escaper` passe par `textContent`, qui laisse intacts les guillemets : sans
+     * distinction, une URL en contenant un sortirait de l'attribut.
+     */
+    function escaperAttribut(valeur) {
+        return String(valeur).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     }
 
     function escaper(texte) {
