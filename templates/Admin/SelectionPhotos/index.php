@@ -8,6 +8,8 @@
  * @var iterable $phototheque
  * @var list<int> $liees
  * @var string $recherche
+ * @var string $filtre
+ * @var array<string, int> $compteurs
  */
 
 $nom = $cible->get('nom') ?? $cible->get('titre');
@@ -114,6 +116,8 @@ $couverture = $liaison->couverture === null ? null : $cible->get($liaison->couve
     // Seul le panneau de la photothèque est remplacé : la sélection du haut
     // reste à l'écran pendant qu'on cherche.
     ?>
+    <?= $this->element('admin/onglets_phototheque') ?>
+
     <form class="mb-6 max-w-md" role="search"
           hx-get="<?= $this->Url->build($urlBase + ['action' => 'index', $liaison->type, $cible->id]) ?>"
           hx-trigger="input changed delay:350ms from:find input"
@@ -123,6 +127,11 @@ $couverture = $liaison->couverture === null ? null : $cible->get($liaison->couve
         <label class="sr-only" for="q">Rechercher une photo</label>
         <input id="q" name="q" type="search" value="<?= h($recherche) ?>" placeholder="Rechercher…"
                class="w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-corail">
+        <?php
+        // Le filtre courant repart avec la recherche : sans lui, taper un mot
+        // ramènerait le photographe sur « Toutes » sans qu'il l'ait demandé.
+        ?>
+        <input type="hidden" name="filtre" value="<?= h($filtre) ?>">
     </form>
 
     <?= $this->element('admin/phototheque') ?>

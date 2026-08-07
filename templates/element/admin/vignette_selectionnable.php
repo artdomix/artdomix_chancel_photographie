@@ -11,6 +11,9 @@
  * @var \Cake\Datasource\EntityInterface $cible
  * @var \App\Model\Entity\Photo $photo
  * @var bool $liee
+ * @var array<string, int>|null $compteurs
+ * @var string|null $filtre
+ * @var bool|null $rafraichirOnglets
  */
 
 $url = $this->Url->build([
@@ -46,3 +49,21 @@ $url = $this->Url->build([
         </span>
     </button>
 </li>
+
+<?php // Drapeau explicite, et non `isset($compteurs)` : la page d'index définit
+      // aussi cette variable, et chaque vignette de la photothèque rendrait alors
+      // son propre bloc d'onglets — autant d'éléments partageant le même
+      // identifiant, ce que htmx comme le HTML interdisent. ?>
+<?php if (!empty($rafraichirOnglets)) : ?>
+    <?php
+    // Réponse à une bascule : les compteurs des onglets viennent de changer, ils
+    // repartent avec la vignette plutôt que d'attendre un rechargement.
+    ?>
+    <?= $this->element('admin/onglets_phototheque', [
+        'liaison' => $liaison,
+        'cible' => $cible,
+        'filtre' => $filtre ?? 'toutes',
+        'compteurs' => $compteurs,
+        'horsBande' => true,
+    ]) ?>
+<?php endif; ?>

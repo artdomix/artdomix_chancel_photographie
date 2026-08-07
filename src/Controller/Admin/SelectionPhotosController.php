@@ -54,6 +54,7 @@ class SelectionPhotosController extends AppController
         $cible = $associateur->cible($liaison, (int)$id);
 
         $recherche = trim((string)$this->request->getQuery('q', ''));
+        $filtre = $this->filtreDemande();
 
         $requete = $this->fetchTable('Photos')->find()->orderBy(['Photos.id' => 'DESC']);
 
@@ -61,11 +62,25 @@ class SelectionPhotosController extends AppController
             $requete = $requete->find('recherche', terme: $recherche);
         }
 
+        // Comptés avant le filtrage, mais après la recherche : « 47 à ranger »
+        // doit parler de ce que l'on cherche, pas de toute la photothèque.
+        $compteurs = [
+            'toutes' => (clone $requete)->count(),
+            'liees' => (clone $requete)->where($this->conditionLiaison($liaison, $cible->id, true))->count(),
+            'libres' => (clone $requete)->where($this->conditionLiaison($liaison, $cible->id, false))->count(),
+        ];
+
+        if ($filtre !== 'toutes') {
+            $requete->where($this->conditionLiaison($liaison, $cible->id, $filtre === 'liees'));
+        }
+
         $this->set('liaison', $liaison);
         $this->set('cible', $cible);
         $this->set('liees', $associateur->photosLiees($liaison, $cible->id));
         $this->set('phototheque', $this->paginate($requete, ['limit' => 48]));
         $this->set('recherche', $recherche);
+        $this->set('filtre', $filtre);
+        $this->set('compteurs', $compteurs);
         $this->set('title', sprintf('Photos du %s', $liaison->libelle));
 
         // Recherche htmx : seul le panneau de la photothèque est renvoyé, la
@@ -73,6 +88,56 @@ class SelectionPhotosController extends AppController
         if ($this->request->is('htmx')) {
             $this->render('/element/admin/phototheque');
         }
+    }
+
+    /**
+     * Filtre demandé, ramené à une valeur connue.
+     *
+     * @return string
+     */
+    protected function filtreDemande(): string
+    {
+        $filtre = (string)$this->request->getQuery('filtre', 'toutes');
+
+        return in_array($filtre, ['toutes', 'liees', 'libres'], true) ? $filtre : 'toutes';
+    }
+
+    /**
+     * Condition restreignant aux photos rattachées, ou à celles qui ne le sont pas.
+     *
+     * `NOT IN` est sûr ici : `photo_id` est NOT NULL dans les tables de jonction.
+     * Avec une colonne nullable, un seul NULL suffirait à ne renvoyer aucune ligne.
+     *
+     * @param \App\Service\Association\Liaison $liaison Liaison concernée.
+     * @param int $cibleId Identifiant de l'entité porteuse.
+     * @param bool $liees Vrai pour les photos déjà rattachées.
+     * @return array<string, mixed>
+     */
+    protected function conditionLiaison(Liaison $liaison, int $cibleId, bool $liees): array
+    {
+        $sousRequete = $this->fetchTable($liaison->jonction)->find()
+            ->select(['photo_id'])
+            ->where([$liaison->cleEtrangere => $cibleId]);
+
+        return ['Photos.id ' . ($liees ? 'IN' : 'NOT IN') => $sousRequete];
+    }
+
+    /**
+     * Compteurs des trois onglets, sur l'ensemble de la photothèque.
+     *
+     * @param \App\Service\Association\Liaison $liaison Liaison concernée.
+     * @param int $cibleId Identifiant de l'entité porteuse.
+     * @return array<string, int>
+     */
+    protected function compteurs(Liaison $liaison, int $cibleId): array
+    {
+        $photos = $this->fetchTable('Photos');
+
+        return [
+            'toutes' => $photos->find()->count(),
+            'liees' => $photos->find()->where($this->conditionLiaison($liaison, $cibleId, true))->count(),
+            'libres' => $photos->find()->where($this->conditionLiaison($liaison, $cibleId, false))->count(),
+        ];
     }
 
     /**
@@ -101,6 +166,12 @@ class SelectionPhotosController extends AppController
 
         if ($this->request->is('htmx')) {
             $this->set(compact('liaison', 'cible', 'photo', 'liee'));
+            // Les compteurs du filtre viennent de changer : ils accompagnent la
+            // vignette dans un échange hors bande, sinon ils resteraient faux
+            // jusqu'au prochain rechargement.
+            $this->set('compteurs', $this->compteurs($liaison, $cible->id));
+            $this->set('filtre', $this->filtreDemande());
+            $this->set('rafraichirOnglets', true);
             $this->viewBuilder()->disableAutoLayout();
 
             return $this->render('/element/admin/vignette_selectionnable');

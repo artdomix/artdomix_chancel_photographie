@@ -296,6 +296,110 @@ class SelectionPhotosTest extends TestCase
     }
 
     /**
+     * Le filtre de la photothèque : sur un millier de photos, retrouver celles
+     * qui manquent à un album en parcourant les pages serait impraticable.
+     *
+     * @return void
+     */
+    public function testFiltreDeLaPhototheque(): void
+    {
+        $cibleId = $this->creerCible('album');
+
+        // Une seule des trois photos est rattachée.
+        $this->post('/admin/selection-photos/basculer/album/' . $cibleId . '/' . $this->photos[0]);
+
+        // Les assertions visent l'identifiant des vignettes de la photothèque et
+        // non le titre : celui-ci figure aussi dans le panneau de sélection du
+        // haut, que le filtre ne concerne pas.
+        $rattachee = sprintf('id="vignette-%d"', $this->photos[0]);
+        $libre = sprintf('id="vignette-%d"', $this->photos[1]);
+
+        // « Déjà rattachées » ne montre que la première.
+        $this->get('/admin/selection-photos/index/album/' . $cibleId . '?filtre=liees');
+        $this->assertResponseOk();
+        $this->assertResponseContains($rattachee);
+        $this->assertResponseNotContains($libre);
+
+        // « Non rattachées » montre exactement l'inverse.
+        $this->get('/admin/selection-photos/index/album/' . $cibleId . '?filtre=libres');
+        $this->assertResponseOk();
+        $this->assertResponseNotContains($rattachee);
+        $this->assertResponseContains($libre);
+
+        // Sans filtre, les trois sont là.
+        $this->get('/admin/selection-photos/index/album/' . $cibleId);
+        $this->assertResponseContains($rattachee);
+        $this->assertResponseContains($libre);
+
+        // Un filtre inventé retombe sur « toutes » plutôt que de renvoyer une
+        // liste vide sans explication.
+        $this->get('/admin/selection-photos/index/album/' . $cibleId . '?filtre=nimportequoi');
+        $this->assertResponseOk();
+        $this->assertResponseContains($rattachee);
+        $this->assertResponseContains($libre);
+    }
+
+    /**
+     * Les compteurs des onglets, et leur mise à jour hors bande après une
+     * bascule : sans elle, les chiffres mentiraient jusqu'au rechargement.
+     *
+     * @return void
+     */
+    public function testCompteursDesOnglets(): void
+    {
+        $cibleId = $this->creerCible('album');
+
+        $this->get('/admin/selection-photos/index/album/' . $cibleId);
+        $this->assertResponseContains('Non rattachées');
+        $this->assertResponseContains('Déjà rattachées');
+
+        // Le bloc d'onglets ne doit apparaître qu'une fois : il porte un
+        // identifiant, et chaque vignette a déjà rendu le sien par accident.
+        $this->assertSame(
+            1,
+            substr_count((string)$this->_response->getBody(), 'id="onglets-phototheque"'),
+            "Les onglets ne doivent être rendus qu'une fois sur la page.",
+        );
+        $this->assertResponseNotContains(
+            'hx-swap-oob',
+            "La page complète ne doit pas contenir d'échange hors bande.",
+        );
+
+        // En htmx, comme le fait le bouton : sans l'en-tête, l'action redirige
+        // au lieu de renvoyer un fragment.
+        $this->configRequest(['headers' => ['HX-Request' => 'true']]);
+        $this->post('/admin/selection-photos/basculer/album/' . $cibleId . '/' . $this->photos[0]);
+
+        // La réponse à la bascule embarque les onglets marqués `hx-swap-oob`.
+        $this->assertResponseContains('hx-swap-oob="true"');
+        $this->assertResponseContains('id="onglets-phototheque"');
+        // Une photo vient d'être rattachée : le compteur « Déjà rattachées » le dit.
+        $this->assertResponseContains('Déjà rattachées');
+    }
+
+    /**
+     * Le filtre doit survivre à une recherche, et réciproquement : sinon taper
+     * un mot ramènerait sur « Toutes » sans qu'on l'ait demandé.
+     *
+     * @return void
+     */
+    public function testLeFiltreEtLaRechercheSeConservent(): void
+    {
+        $cibleId = $this->creerCible('album');
+        $this->post('/admin/selection-photos/basculer/album/' . $cibleId . '/' . $this->photos[0]);
+
+        $this->get('/admin/selection-photos/index/album/' . $cibleId . '?filtre=libres');
+
+        // Le champ caché du formulaire de recherche porte le filtre courant.
+        $this->assertResponseContains('name="filtre" value="libres"');
+
+        // Et les onglets conservent le terme cherché.
+        $this->get('/admin/selection-photos/index/album/' . $cibleId . '?q=selection&filtre=libres');
+        $this->assertResponseOk();
+        $this->assertResponseContains('q=selection');
+    }
+
+    /**
      * Un type de liaison inconnu vient de l'URL : c'est une 404, pas une erreur
      * de programmation.
      *

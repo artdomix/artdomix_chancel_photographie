@@ -11,14 +11,18 @@
  * @var iterable $phototheque
  * @var list<int> $liees
  * @var string $recherche
+ * @var string $filtre
  */
 ?>
 <div id="phototheque">
     <?php if (count($phototheque) === 0) : ?>
         <p class="py-12 text-center text-gris">
-            <?= $recherche === ''
-                ? "Aucune photo importée. Commencez par en importer depuis la section Photos."
-                : 'Aucune photo ne correspond à cette recherche.' ?>
+            <?= match (true) {
+                $recherche !== '' => 'Aucune photo ne correspond à cette recherche.',
+                $filtre === 'libres' => 'Toute la photothèque est déjà rattachée.',
+                $filtre === 'liees' => 'Aucune photo rattachée pour l\'instant.',
+                default => 'Aucune photo importée. Commencez par en importer depuis la section Photos.',
+            } ?>
         </p>
     <?php else : ?>
         <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
