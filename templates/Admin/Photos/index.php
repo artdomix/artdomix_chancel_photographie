@@ -3,6 +3,7 @@
  * @var \App\View\AppView $this
  * @var iterable $photos
  * @var string $recherche
+ * @var array<string, array<string, string>> $destinations
  */
 ?>
 <div class="mb-8 flex items-center justify-between">
@@ -28,8 +29,26 @@
     <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
         <?= $this->Form->control('action_masse', [
             'type' => 'select',
-            'options' => ['activer' => 'Mettre en ligne', 'desactiver' => 'Masquer', 'tagger' => 'Ajouter des tags'],
+            'options' => [
+                'activer' => 'Mettre en ligne',
+                'desactiver' => 'Masquer',
+                'tagger' => 'Ajouter des tags',
+                'rattacher' => 'Ajouter à…',
+            ],
             'empty' => 'Action groupée…',
+            'label' => false,
+            'class' => 'border border-white/20 bg-noir-clair px-3 py-2',
+        ]) ?>
+
+        <?php
+        // Un seul menu réunit albums, moodboards et galeries : `optgroup` les
+        // distingue sans imposer un choix de catégorie préalable. La valeur
+        // porte le type et l'identifiant, séparés par deux-points.
+        ?>
+        <?= $this->Form->control('cible', [
+            'type' => 'select',
+            'options' => $destinations,
+            'empty' => 'Destination…',
             'label' => false,
             'class' => 'border border-white/20 bg-noir-clair px-3 py-2',
         ]) ?>

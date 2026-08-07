@@ -44,6 +44,22 @@ $label = ['class' => 'mb-2 block text-sm text-gris'];
     <?= $this->Form->button('Enregistrer', ['class' => 'bg-corail px-6 py-2 font-display text-sm uppercase tracking-titre text-noir hover:bg-corail-sombre']) ?>
 <?= $this->Form->end() ?>
 
+
+<?php if (!$moodboard->isNew()) : ?>
+    <p class="mt-8">
+        <a class="inline-block border border-corail px-5 py-2 font-display text-sm uppercase tracking-titre text-corail hover:bg-corail hover:text-noir"
+           href="<?= $this->Url->build([
+               'prefix' => 'Admin',
+               'controller' => 'SelectionPhotos',
+               'action' => 'index',
+               'moodboard',
+               $moodboard->id,
+           ]) ?>">
+            Choisir les photos
+        </a>
+    </p>
+<?php endif; ?>
+
 <?php if (!$moodboard->isNew()) : ?>
     <p class="mt-8 text-sm text-gris">
         Lien de partage :

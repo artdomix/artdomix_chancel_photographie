@@ -211,6 +211,39 @@ class BackOfficeTest extends TestCase
     }
 
     /**
+     * Les formulaires d'album, de moodboard et de galerie doivent tous mener au
+     * module de rattachement des photos : c'est le seul chemin vers lui.
+     *
+     * @return void
+     */
+    public function testLesFormulairesMenentAuModuleDeSelection(): void
+    {
+        $this->connecter($this->idAdmin);
+
+        $cibles = [
+            'Albums' => ['nom' => 'Album lien de test'],
+            'Moodboards' => ['titre' => 'Moodboard lien de test', 'theme' => 'mosaique-flip', 'visibilite' => 'lien'],
+            'Galeries' => ['nom' => 'Galerie lien de test'],
+        ];
+        $types = ['Albums' => 'album', 'Moodboards' => 'moodboard', 'Galeries' => 'galerie'];
+
+        foreach ($cibles as $modele => $donnees) {
+            $table = TableRegistry::getTableLocator()->get($modele);
+            $entite = $table->newEntity($donnees);
+            $table->saveOrFail($entite);
+
+            $this->get(sprintf('/admin/%s/modifier/%d', strtolower($modele), $entite->id));
+            $this->assertResponseOk();
+            $this->assertResponseContains(
+                sprintf('/admin/selection-photos/index/%s/%d', $types[$modele], $entite->id),
+                sprintf('Le formulaire %s devrait mener au module de sélection.', $modele),
+            );
+
+            $table->delete($entite);
+        }
+    }
+
+    /**
      * La fiche d'une photo.
      *
      * Elle a longtemps manqué : la liste des photos affichait un lien

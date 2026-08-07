@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Model\Enum\Role;
-use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 
@@ -18,18 +17,6 @@ use Cake\Http\Response;
  */
 class GaleriesController extends AppController
 {
-    /**
-     * @param \Cake\Event\EventInterface $event Événement de démarrage.
-     * @return void
-     */
-    public function beforeFilter(EventInterface $event): void
-    {
-        parent::beforeFilter($event);
-
-        // Le réordonnancement des photos envoie du JSON depuis le glisser-déposer.
-        $this->actionsJavascript(['ordonner']);
-    }
-
     /**
      * @return void
      */
@@ -94,37 +81,6 @@ class GaleriesController extends AppController
         $this->set('title', $id === null ? 'Nouvelle galerie' : 'Modifier une galerie');
 
         return null;
-    }
-
-    /**
-     * Enregistre le nouvel ordre des photos d'une galerie.
-     *
-     * @param string|null $id Identifiant de la galerie.
-     * @return \Cake\Http\Response
-     */
-    public function ordonner(?string $id = null): Response
-    {
-        $this->request->allowMethod('post');
-
-        $galerie = $this->fetchTable('Galeries')->find()->where(['id' => (int)$id])->first();
-
-        if ($galerie === null) {
-            throw new NotFoundException();
-        }
-
-        $ordre = (array)($this->request->getData('ordre') ?? []);
-        $liaison = $this->fetchTable('GaleriesPhotos');
-
-        foreach ($ordre as $position => $photoId) {
-            $liaison->updateAll(
-                ['ordre' => (int)$position],
-                ['galerie_id' => $galerie->id, 'photo_id' => (int)$photoId],
-            );
-        }
-
-        return $this->response
-            ->withType('application/json')
-            ->withStringBody((string)json_encode(['ok' => true, 'nb' => count($ordre)]));
     }
 
     /**

@@ -24,36 +24,24 @@ $champ = 'w-full border border-white/20 bg-noir-clair px-3 py-2 focus:border-cor
 <?= $this->Form->end() ?>
 
 <?php
-// Un album qui n'existe pas encore n'a évidemment aucune photo à ordonner : le
-// bloc entier disparaît plutôt que d'afficher une grille vide et un lien
-// « ordonner » sans identifiant.
+// Le rattachement et l'ordre des photos sont pris en charge par le module de
+// sélection, commun aux albums, moodboards et galeries : les dupliquer ici
+// ferait diverger deux écrans qui rendent le même service.
 ?>
 <?php if (!$album->isNew()) : ?>
-    <h2 class="mb-2 mt-12 text-lg">Ordre des photos</h2>
-
-    <?php if (empty($album->photos)) : ?>
-        <p class="mt-4 text-sm text-gris">
-            Aucune photo dans cet album. Rattachez-en depuis la fiche d'une photo.
-        </p>
-    <?php else : ?>
+    <div class="mt-10 border-t border-white/10 pt-6">
         <p class="mb-4 text-sm text-gris">
-            Glissez les vignettes pour les réordonner, ou utilisez les flèches gauche et
-            droite après avoir sélectionné une vignette au clavier.
+            <?= h((string)count($album->photos)) ?> photo(s) dans cet album.
         </p>
-        <p data-tri-etat class="mb-4 text-sm text-corail" role="status" aria-live="polite"></p>
-
-        <div data-tri
-             data-tri-url="<?= $this->Url->build(['action' => 'ordonner', $album->id]) ?>"
-             data-csrf="<?= h($this->getRequest()->getAttribute('csrfToken')) ?>"
-             class="grid grid-cols-3 gap-3 md:grid-cols-6">
-            <?php foreach ($album->photos as $photo) : ?>
-                <div data-tri-item="<?= h((string)$photo->id) ?>" tabindex="0"
-                     class="cursor-grab focus:outline focus:outline-2 focus:outline-corail">
-                    <img src="<?= h($this->Photo->url($photo, 'thumb', 'jpeg')) ?>"
-                         alt="<?= h((string)($photo->titre ?? '')) ?>" width="160" height="107"
-                         loading="lazy" class="w-full object-cover">
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <a class="inline-block border border-corail px-5 py-2 font-display text-sm uppercase tracking-titre text-corail hover:bg-corail hover:text-noir"
+           href="<?= $this->Url->build([
+               'prefix' => 'Admin',
+               'controller' => 'SelectionPhotos',
+               'action' => 'index',
+               'album',
+               $album->id,
+           ]) ?>">
+            Choisir les photos
+        </a>
+    </div>
 <?php endif; ?>

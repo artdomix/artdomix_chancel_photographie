@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 
@@ -12,18 +11,6 @@ use Cake\Http\Response;
  */
 class AlbumsController extends AppController
 {
-    /**
-     * @param \Cake\Event\EventInterface $event Événement de démarrage.
-     * @return void
-     */
-    public function beforeFilter(EventInterface $event): void
-    {
-        parent::beforeFilter($event);
-
-        // Le réordonnancement envoie du JSON depuis le glisser-déposer.
-        $this->actionsJavascript(['ordonner']);
-    }
-
     /**
      * @return void
      */
@@ -122,40 +109,6 @@ class AlbumsController extends AppController
         }
 
         return $this->redirect(['action' => 'index']);
-    }
-
-    /**
-     * Enregistre le nouvel ordre des photos d'un album.
-     *
-     * Reçoit du JSON depuis le glisser-déposer et répond en JSON : l'appelant
-     * n'a besoin que de savoir si l'enregistrement a réussi.
-     *
-     * @param string|null $id Identifiant de l'album.
-     * @return \Cake\Http\Response
-     */
-    public function ordonner(?string $id = null): Response
-    {
-        $this->request->allowMethod('post');
-
-        $album = $this->fetchTable('Albums')->find()->where(['id' => (int)$id])->first();
-
-        if ($album === null) {
-            throw new NotFoundException();
-        }
-
-        $ordre = (array)($this->request->getData('ordre') ?? []);
-        $liaison = $this->fetchTable('AlbumsPhotos');
-
-        foreach ($ordre as $position => $photoId) {
-            $liaison->updateAll(
-                ['ordre' => (int)$position],
-                ['album_id' => $album->id, 'photo_id' => (int)$photoId],
-            );
-        }
-
-        return $this->response
-            ->withType('application/json')
-            ->withStringBody(json_encode(['ok' => true, 'nb' => count($ordre)]));
     }
 
     /**

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\Association\AssociateurPhotos;
+use App\Service\Association\Liaison;
 use App\Service\Image\PhotoUploader;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
@@ -48,6 +50,7 @@ class PhotosController extends AppController
 
         $this->set('photos', $this->paginate($requete, ['limit' => 60]));
         $this->set('recherche', $recherche);
+        $this->set('destinations', $this->destinations());
         $this->set('title', 'Photos');
 
         if ($this->request->is('htmx')) {
@@ -217,12 +220,99 @@ class PhotosController extends AppController
             'activer' => $photos->updateAll(['actif' => true], ['id IN' => $ids]),
             'desactiver' => $photos->updateAll(['actif' => false], ['id IN' => $ids]),
             'tagger' => $this->taggerEnMasse($ids, array_filter(array_map('intval', (array)$this->request->getData('tag_ids')))),
+            'rattacher' => $this->rattacherEnMasse($ids),
             default => null,
         };
 
-        $this->Flash->success(__('{0} photos mises à jour.', count($ids)));
+        // Le rattachement a déjà annoncé son résultat, qui n'est pas le nombre de
+        // photos cochées : certaines pouvaient déjà être dans la cible.
+        if ($action !== 'rattacher') {
+            $this->Flash->success(__('{0} photos mises à jour.', count($ids)));
+        }
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Destinations proposées à l'action groupée, groupées par famille.
+     *
+     * @return array<string, array<string, string>>
+     */
+    protected function destinations(): array
+    {
+        $groupes = [];
+
+        // Les albums sont présentés en arbre : deux albums homonymes dans des
+        // branches différentes seraient sinon indiscernables.
+        $groupes['Albums'] = $this->prefixer(
+            'album',
+            $this->fetchTable('Albums')->find('treeList', spacer: ' — ')->toArray(),
+        );
+        $groupes['Moodboards'] = $this->prefixer(
+            'moodboard',
+            $this->fetchTable('Moodboards')->find('list', valueField: 'titre')
+                ->orderBy(['Moodboards.created' => 'DESC'])->toArray(),
+        );
+        $groupes['Galeries client'] = $this->prefixer(
+            'galerie',
+            $this->fetchTable('Galeries')->find('list', valueField: 'nom')
+                ->orderBy(['Galeries.created' => 'DESC'])->toArray(),
+        );
+
+        return array_filter($groupes);
+    }
+
+    /**
+     * @param string $type Type de liaison.
+     * @param array<int, string> $entites Identifiant => libellé.
+     * @return array<string, string>
+     */
+    protected function prefixer(string $type, array $entites): array
+    {
+        $options = [];
+
+        foreach ($entites as $id => $libelle) {
+            $options[$type . ':' . $id] = $libelle;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Envoie un lot de photos vers un album, un moodboard ou une galerie.
+     *
+     * C'est le geste qui suit un import : deux cents photos viennent d'arriver,
+     * elles vont toutes dans le même album. Passer par la fiche de chacune, ou
+     * cliquer deux cents vignettes dans l'écran de sélection, serait absurde.
+     *
+     * @param list<int> $photoIds Photos visées.
+     * @return void
+     */
+    protected function rattacherEnMasse(array $photoIds): void
+    {
+        $cible = (string)$this->request->getData('cible');
+
+        // Le champ vaut « type:identifiant » : un seul menu déroulant réunit les
+        // albums, les moodboards et les galeries, ce qui évite au photographe de
+        // choisir d'abord une catégorie puis une cible.
+        if (!str_contains($cible, ':')) {
+            $this->Flash->error(__('Aucune destination choisie.'));
+
+            return;
+        }
+
+        [$type, $cibleId] = explode(':', $cible, 2);
+
+        $liaison = Liaison::pour($type);
+        $associateur = new AssociateurPhotos();
+        $entite = $associateur->cible($liaison, (int)$cibleId);
+
+        $ajoutees = $associateur->attacherPlusieurs($liaison, $entite->id, $photoIds);
+        $nom = $entite->get('nom') ?? $entite->get('titre');
+
+        $this->Flash->success($ajoutees === 0
+            ? __('Ces photos étaient déjà dans « {0} ».', $nom)
+            : __('{0} photo(s) ajoutée(s) à « {1} ».', $ajoutees, $nom));
     }
 
     /**

@@ -71,6 +71,22 @@ $label = ['class' => 'mb-2 block text-sm text-gris'];
     ]) ?>
 <?= $this->Form->end() ?>
 
+
+<?php if (!$galerie->isNew()) : ?>
+    <p class="mt-8">
+        <a class="inline-block border border-corail px-5 py-2 font-display text-sm uppercase tracking-titre text-corail hover:bg-corail hover:text-noir"
+           href="<?= $this->Url->build([
+               'prefix' => 'Admin',
+               'controller' => 'SelectionPhotos',
+               'action' => 'index',
+               'galerie',
+               $galerie->id,
+           ]) ?>">
+            Choisir les photos
+        </a>
+    </p>
+<?php endif; ?>
+
 <?php if (!$galerie->isNew()) : ?>
     <p class="mt-8 text-sm text-gris">
         Lien de partage :
@@ -79,31 +95,4 @@ $label = ['class' => 'mb-2 block text-sm text-gris'];
         </code>
     </p>
 
-    <?php if (count($galerie->photos) > 0) : ?>
-        <?php
-        // Le glisser-déposer est piloté par `chancel-admin.js`, qui poste le
-        // nouvel ordre en JSON. Le jeton CSRF est passé en attribut : le script
-        // le renvoie dans l'en-tête `X-CSRF-Token`.
-        ?>
-        <h2 class="mb-2 mt-12 text-lg">Ordre des photos</h2>
-        <p class="mb-4 text-sm text-gris">
-            Glissez les vignettes pour les réordonner, ou utilisez les flèches
-            gauche et droite après avoir sélectionné une vignette au clavier.
-        </p>
-        <p data-tri-etat class="mb-4 text-sm text-corail" role="status" aria-live="polite"></p>
-
-        <div data-tri
-             data-tri-url="<?= $this->Url->build(['action' => 'ordonner', $galerie->id]) ?>"
-             data-csrf="<?= h($this->getRequest()->getAttribute('csrfToken')) ?>"
-             class="grid grid-cols-3 gap-3 md:grid-cols-6">
-            <?php foreach ($galerie->photos as $photo) : ?>
-                <div data-tri-item="<?= h((string)$photo->id) ?>" tabindex="0"
-                     class="cursor-grab focus:outline focus:outline-2 focus:outline-corail">
-                    <img src="<?= h($this->Photo->url($photo, 'thumb', 'jpeg')) ?>"
-                         alt="<?= h((string)($photo->titre ?? '')) ?>" width="160" height="107"
-                         loading="lazy" class="w-full object-cover">
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
 <?php endif; ?>
