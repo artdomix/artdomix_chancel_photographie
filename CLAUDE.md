@@ -72,8 +72,12 @@ Tailwind est compilé **dans le navigateur** par `@tailwindcss/browser`. Deux
 conséquences à connaître avant de toucher au CSS :
 
 - `webroot/css/chancel-theme.css` n'est pas servi comme feuille de style, son contenu est
-  injecté dans un `<style type="text/tailwindcss">` ; son `@import` ne sait résoudre que
-  les feuilles internes de Tailwind, jamais une URL ;
+  injecté dans un `<style type="text/tailwindcss">`. Il ne doit contenir **aucune règle
+  d'import, pas même citée en commentaire** : Tailwind n'ajoute sa feuille de base que
+  s'il n'en détecte aucune, et il le vérifie par une simple recherche de texte — une
+  mention suffit à priver le site de tous ses utilitaires. Le navigateur, de son côté,
+  va chercher tout import de ce bloc relativement à l'URL courante, d'où un 404 du type
+  `/admin/tailwindcss` ;
 - `webroot/css/chancel-repli.css` est du CSS ordinaire, chargé en premier, qui garantit un
   fond sombre et un texte lisible pendant la compilation et si le CDN ne répond pas.
 

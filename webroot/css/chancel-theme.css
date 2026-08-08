@@ -6,10 +6,19 @@
  * que le compilateur Tailwind du navigateur sait lire. Il est gardé à part
  * plutôt qu'écrit en dur dans le helper pour rester éditable comme du CSS.
  *
- * Contrainte du build navigateur : `@import` n'accepte que les feuilles internes
- * de Tailwind. Les polices sont donc chargées à côté, par un `<link>` classique.
+ * Ce fichier ne doit contenir AUCUNE règle d'import, pas même citée dans un
+ * commentaire. Deux raisons, toutes deux vérifiables :
+ *
+ * 1. le compilateur ajoute lui-même la feuille Tailwind de base, mais seulement
+ *    s'il n'en trouve aucune ici — et il le vérifie par une simple recherche de
+ *    texte, commentaires compris. Une mention suffit donc à le faire renoncer,
+ *    et le site perd alors la totalité de ses utilitaires ;
+ * 2. le navigateur, lui, lit les règles d'import de ce bloc bien qu'il en ignore
+ *    le type, et va chercher la feuille demandée relativement à l'URL courante :
+ *    d'où un 404 sur `/admin/tailwindcss` visible dans la console.
+ *
+ * Les polices sont chargées à côté, par un `<link>` classique.
  */
-@import 'tailwindcss';
 
 /*
  * Thème « légèrement inspiré » de l'ancien site : fond sombre, accent corail

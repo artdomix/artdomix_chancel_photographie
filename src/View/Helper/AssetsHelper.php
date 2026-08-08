@@ -168,8 +168,13 @@ class AssetsHelper extends Helper
      *
      * Le contenu est injecté plutôt que référencé par `<link>` : le build
      * navigateur de Tailwind ne compile que les blocs
-     * `<style type="text/tailwindcss">` présents dans le document, et son
-     * `@import` ne sait résoudre que ses propres feuilles internes.
+     * `<style type="text/tailwindcss">` présents dans le document.
+     *
+     * Le fichier de thème ne déclare volontairement aucun import — pas même en
+     * commentaire. Tailwind ajoute lui-même sa feuille de base quand il n'en
+     * trouve pas, et le navigateur, lui, tente de récupérer tout import de ce
+     * bloc relativement à l'URL courante. Le détail est en tête du fichier CSS,
+     * et un test garde la règle.
      *
      * @return string
      */
