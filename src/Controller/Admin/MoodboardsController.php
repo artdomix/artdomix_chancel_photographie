@@ -27,7 +27,46 @@ class MoodboardsController extends AppController
         );
 
         $this->set(compact('moodboards'));
+        $this->set('apercus', $this->apercus($moodboards));
         $this->set('title', 'Moodboards');
+    }
+
+    /**
+     * Première photo de chaque moodboard, pour donner un repère visuel dans la liste.
+     *
+     * Un moodboard n'a pas de photo de couverture en base — contrairement aux
+     * albums — parce que le rendu public part de la première photo de la
+     * sélection. La liste montre donc la même image que la page partagée.
+     *
+     * @param iterable<\App\Model\Entity\Moodboard> $moodboards Moodboards affichés.
+     * @return array<int, \App\Model\Entity\Photo>
+     */
+    protected function apercus(iterable $moodboards): array
+    {
+        $ids = [];
+
+        foreach ($moodboards as $moodboard) {
+            $ids[] = $moodboard->id;
+        }
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $apercus = [];
+
+        // Une seule requête pour toute la page : on garde la première ligne
+        // rencontrée par moodboard, l'ordre du tri faisant le reste.
+        $liens = $this->fetchTable('MoodboardsPhotos')->find()
+            ->contain(['Photos'])
+            ->where(['MoodboardsPhotos.moodboard_id IN' => $ids])
+            ->orderBy(['MoodboardsPhotos.moodboard_id' => 'ASC', 'MoodboardsPhotos.ordre' => 'ASC']);
+
+        foreach ($liens as $lien) {
+            $apercus[$lien->moodboard_id] ??= $lien->photo;
+        }
+
+        return $apercus;
     }
 
     /**

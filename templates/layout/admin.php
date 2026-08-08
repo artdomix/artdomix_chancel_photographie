@@ -101,5 +101,14 @@ $lienActif = 'block border-l-2 border-corail bg-white/5 px-4 py-1.5 text-sm text
         <?= $this->fetch('content') ?>
     </main>
 </div>
+
+<?php
+// `Form->postLink()` fabrique un formulaire par lien. Quand le lien se trouve à
+// l'intérieur d'un autre formulaire — ce que le HTML interdit — l'option
+// `block` met ce formulaire en réserve, et c'est ici qu'il doit ressortir.
+// Sans cette ligne, le lien s'affiche mais ne déclenche rien : c'est ce qui
+// rendait « Définir en couverture » inopérant.
+?>
+<?= $this->fetch('postLink') ?>
 </body>
 </html>

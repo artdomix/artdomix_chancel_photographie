@@ -8,11 +8,12 @@
  * @var array<\App\Model\Entity\Photo> $memeSerie
  * @var iterable $ancetres
  */
+use App\Model\Entity\Photo;
 
 // Le lien vers une photo emporte sa série : sans ce paramètre, la voisine
 // affichée retomberait sur la première série de la photo, qui n'est pas
 // forcément celle que le visiteur est en train de parcourir.
-$versPhoto = fn(\App\Model\Entity\Photo $cible): string => $this->Url->build(
+$versPhoto = fn(Photo $cible): string => $this->Url->build(
     '/photo/' . $cible->slug . ($serie !== null ? '?serie=' . $serie->slug : ''),
 );
 

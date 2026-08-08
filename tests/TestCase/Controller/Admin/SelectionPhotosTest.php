@@ -296,6 +296,81 @@ class SelectionPhotosTest extends TestCase
     }
 
     /**
+     * Le lien « Définir en couverture » doit être servi par un vrai formulaire.
+     *
+     * Il vit à l'intérieur du formulaire de la sélection, ce que le HTML
+     * interdit d'imbriquer : `postLink` met donc son formulaire en réserve dans
+     * le bloc `postLink`, et le layout doit le ressortir. Tant qu'il ne le
+     * faisait pas, le lien s'affichait et ne déclenchait rien — un test qui se
+     * contente de poster l'URL, comme celui ci-dessus, ne voit pas la panne.
+     *
+     * @return void
+     */
+    public function testLeLienDeCouvertureEstRelieAUnFormulaire(): void
+    {
+        $cibleId = $this->creerCible('album');
+        $this->post('/admin/selection-photos/basculer/album/' . $cibleId . '/' . $this->photos[0]);
+
+        $this->get('/admin/selection-photos/index/album/' . $cibleId);
+        $this->assertResponseOk();
+
+        $action = sprintf('/admin/selection-photos/couverture/album/%d/%d', $cibleId, $this->photos[0]);
+        $this->assertResponseContains('Définir en couverture');
+        $this->assertMatchesRegularExpression(
+            '#<form[^>]+action="' . preg_quote($action, '#') . '"#',
+            (string)$this->_response->getBody(),
+        );
+    }
+
+    /**
+     * La couverture n'a d'utilité que si le photographe voit laquelle il a
+     * choisie sans ouvrir chaque album.
+     *
+     * @return void
+     */
+    public function testLaListeDesAlbumsMontreLaCouverture(): void
+    {
+        $cibleId = $this->creerCible('album');
+        $this->post('/admin/selection-photos/basculer/album/' . $cibleId . '/' . $this->photos[0]);
+        $this->post(sprintf('/admin/selection-photos/couverture/album/%d/%d', $cibleId, $this->photos[0]));
+
+        $this->get('/admin/albums');
+        $this->assertResponseOk();
+        $this->assertResponseContains(self::BASE_FICHIER . '1-thumb.jpeg');
+    }
+
+    /**
+     * Un album sans couverture s'affiche sans image sur le site : la liste le
+     * signale plutôt que de laisser croire à un oubli d'affichage.
+     *
+     * @return void
+     */
+    public function testUnAlbumSansCouvertureEstSignale(): void
+    {
+        $this->creerCible('album');
+
+        $this->get('/admin/albums');
+        $this->assertResponseOk();
+        $this->assertResponseContains('sans<br>image');
+    }
+
+    /**
+     * Faute de colonne de couverture, un moodboard est reconnaissable à sa
+     * première photo — celle-là même qui ouvre la page partagée.
+     *
+     * @return void
+     */
+    public function testLaListeDesMoodboardsMontreUnApercu(): void
+    {
+        $cibleId = $this->creerCible('moodboard');
+        $this->post('/admin/selection-photos/basculer/moodboard/' . $cibleId . '/' . $this->photos[1]);
+
+        $this->get('/admin/moodboards');
+        $this->assertResponseOk();
+        $this->assertResponseContains(self::BASE_FICHIER . '2-thumb.jpeg');
+    }
+
+    /**
      * Le filtre de la photothèque : sur un millier de photos, retrouver celles
      * qui manquent à un album en parcourant les pages serait impraticable.
      *

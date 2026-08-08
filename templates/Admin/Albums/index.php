@@ -18,11 +18,24 @@ $brancher = function (iterable $noeuds, int $profondeur = 0) use (&$brancher): s
     foreach ($noeuds as $album) {
         $html .= '<li class="border-b border-white/5 py-2">';
         $html .= '<div class="flex items-center justify-between" style="padding-left:' . ($profondeur * 24) . 'px">';
-        $html .= '<span>' . h($album->nom);
+        $html .= '<span class="flex items-center gap-3">';
+
+        if ($album->cover_photo !== null) {
+            $html .= sprintf(
+                '<img src="%s" alt="" width="64" height="43" loading="lazy" class="h-9 w-14 object-cover">',
+                h($this->Photo->url($album->cover_photo, 'thumb', 'jpeg')),
+            );
+        } else {
+            $html .= '<span class="flex h-9 w-14 items-center justify-center border border-dashed '
+                . 'border-white/20 text-[10px] leading-tight text-gris" '
+                . 'title="Cette série s\'affiche sans image sur le site">sans<br>image</span>';
+        }
+
+        $html .= h($album->nom);
         $html .= $album->visibilite === VisibiliteAlbum::Prive
             ? ' <span class="ml-2 text-xs uppercase tracking-titre text-gris">privé</span>'
             : '';
-        $html .= '</span><span class="flex gap-3 text-sm">';
+        $html .= '</span><span class="flex items-center gap-3 text-sm">';
         $html .= $this->Form->postLink('↑', ['action' => 'deplacer', $album->id, 'haut'], [
             'class' => 'text-gris hover:text-corail', 'escapeTitle' => false, 'title' => 'Monter',
         ]);

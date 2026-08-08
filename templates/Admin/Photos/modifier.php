@@ -131,7 +131,7 @@ $metadonnees = $exif === null ? [] : array_filter([
 
             <?= $this->Form->postLink('Supprimer la photo', ['action' => 'supprimer', $photo->id], [
                 'class' => 'text-gris hover:text-red-400',
-                'confirm' => "La photo, ses déclinaisons et son original seront supprimés. Continuer ?",
+                'confirm' => 'La photo, ses déclinaisons et son original seront supprimés. Continuer ?',
             ]) ?>
         </div>
 

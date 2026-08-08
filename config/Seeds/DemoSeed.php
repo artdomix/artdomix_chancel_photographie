@@ -273,7 +273,7 @@ class DemoSeed extends BaseSeed
                 'id' => 1,
                 'titre' => 'Routes du Nord',
                 'slug' => 'routes-du-nord',
-                'description' => "Quarante photographies prises entre la Baltique et les Lofoten, "
+                'description' => 'Quarante photographies prises entre la Baltique et les Lofoten, '
                     . 'sur trois hivers.',
                 'photo_id' => 3,
                 'prix' => 45.00,

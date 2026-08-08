@@ -16,8 +16,14 @@ $onglets = [
 
 <nav class="mb-8 flex gap-6 text-sm" aria-label="Filtrer les messages">
     <?php foreach ($onglets as $cle => $libelle) : ?>
-        <a class="<?= $filtre === $cle ? 'text-corail' : 'lien-souligne text-gris' ?>"
-           <?= $filtre === $cle ? 'aria-current="page"' : '' ?>
+        <?php
+        // L'état actif est calculé avant la balise plutôt que dans deux
+        // ternaires successifs : phpcbf, qui analyse les blocs PHP d'un
+        // gabarit comme un flux continu, réécrivait le second de travers.
+        $actif = $filtre === $cle;
+        ?>
+        <a class="<?= $actif ? 'text-corail' : 'lien-souligne text-gris' ?>"
+           <?= $actif ? 'aria-current="page"' : '' ?>
            href="<?= $this->Url->build(['action' => 'index', '?' => ['filtre' => $cle]]) ?>">
             <?= h($libelle) ?>
         </a>

@@ -100,9 +100,10 @@ $couverture = $liaison->couverture === null ? null : $cible->get($liaison->couve
                     'class' => 'border border-white/20 px-4 py-2 uppercase tracking-titre hover:border-corail hover:text-corail',
                 ]) ?>
                 <?php if ($couverture !== null) : ?>
+                    <?php // `block` : le formulaire sort du formulaire englobant. ?>
                     <?= $this->Form->postLink('Retirer la couverture', $urlBase + [
                         'action' => 'couverture', $liaison->type, $cible->id, 'aucune',
-                    ], ['class' => 'text-gris hover:text-corail']) ?>
+                    ], ['class' => 'text-gris hover:text-corail', 'block' => true]) ?>
                 <?php endif; ?>
             </div>
         <?= $this->Form->end() ?>

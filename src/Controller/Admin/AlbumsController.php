@@ -18,7 +18,10 @@ class AlbumsController extends AppController
     {
         // `threaded` restitue la hiérarchie complète en une requête, grâce aux
         // bornes lft/rght du TreeBehavior.
+        // La couverture est ce que le site public montre de chaque série : la
+        // voir ici évite d'ouvrir chaque album pour découvrir qu'il n'en a pas.
         $albums = $this->fetchTable('Albums')->find('threaded')
+            ->contain(['CoverPhotos'])
             ->orderBy(['Albums.lft' => 'ASC'])
             ->all();
 
